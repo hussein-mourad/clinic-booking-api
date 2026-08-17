@@ -1,0 +1,10 @@
+node_modules/
+dist/
+*.tsbuildinfo
+.git/
+coverage/
+*.log
+.env
+.env.local
+docs/
+PLAN.md
