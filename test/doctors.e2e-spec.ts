@@ -36,7 +36,7 @@ describe('Doctors (e2e)', () => {
   });
 
   it('rejects unauthenticated access with 401', async () => {
-    await request(app.getHttpServer()).get('/doctors/1/schedule').expect(401);
+    await request(app.getHttpServer()).get('/doctors/me/schedule').expect(401);
   });
 
   it('lists doctors for any authenticated user', async () => {
@@ -65,7 +65,7 @@ describe('Doctors (e2e)', () => {
     emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
 
     const put = await request(app.getHttpServer())
-      .put(`/doctors/${user.id}/schedule`)
+      .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${token}`)
       .send({
         entries: [
@@ -79,7 +79,7 @@ describe('Doctors (e2e)', () => {
     expect(put.body[0]).toMatchObject({ doctorId: user.id, dayOfWeek: 0, startTime: '10:00', endTime: '16:00' });
 
     const get = await request(app.getHttpServer())
-      .get(`/doctors/${user.id}/schedule`)
+      .get('/doctors/me/schedule')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
     expect(get.body).toHaveLength(2);
@@ -90,7 +90,7 @@ describe('Doctors (e2e)', () => {
     emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
 
     await request(app.getHttpServer())
-      .put(`/doctors/${user.id}/schedule`)
+      .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${token}`)
       .send({
         entries: [
@@ -101,7 +101,7 @@ describe('Doctors (e2e)', () => {
       .expect(400);
 
     await request(app.getHttpServer())
-      .put(`/doctors/${user.id}/schedule`)
+      .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${token}`)
       .send({ entries: [{ dayOfWeek: 2, startTime: '16:00', endTime: '10:00' }] })
       .expect(400);
@@ -112,13 +112,13 @@ describe('Doctors (e2e)', () => {
     emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
 
     await request(app.getHttpServer())
-      .patch(`/doctors/${user.id}`)
+      .patch('/doctors/me')
       .set('Authorization', `Bearer ${token}`)
       .send({ slotDurationMin: 30 })
       .expect(200);
 
     await request(app.getHttpServer())
-      .patch(`/doctors/${user.id}`)
+      .patch('/doctors/me')
       .set('Authorization', `Bearer ${token}`)
       .send({ slotDurationMin: 45 })
       .expect(400);
@@ -129,37 +129,37 @@ describe('Doctors (e2e)', () => {
     emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
 
     const fullDay = await request(app.getHttpServer())
-      .post(`/doctors/${user.id}/blocks`)
+      .post('/doctors/me/blocks')
       .set('Authorization', `Bearer ${token}`)
       .send({ blockDate: '2026-08-25' })
       .expect(201);
     expect(fullDay.body).toMatchObject({ doctorId: user.id, blockDate: '2026-08-25', startTime: null, endTime: null });
 
     const range = await request(app.getHttpServer())
-      .post(`/doctors/${user.id}/blocks`)
+      .post('/doctors/me/blocks')
       .set('Authorization', `Bearer ${token}`)
       .send({ blockDate: '2026-08-26', startTime: '12:00', endTime: '14:00' })
       .expect(201);
     expect(range.body.startTime).toBe('12:00');
 
     await request(app.getHttpServer())
-      .post(`/doctors/${user.id}/blocks`)
+      .post('/doctors/me/blocks')
       .set('Authorization', `Bearer ${token}`)
       .send({ blockDate: '2026-08-27', startTime: '12:00' })
       .expect(400);
 
     await request(app.getHttpServer())
-      .delete(`/doctors/${user.id}/blocks/${range.body.id}`)
+      .delete(`/doctors/me/blocks/${range.body.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
 
     await request(app.getHttpServer())
-      .delete(`/doctors/${user.id}/blocks/${range.body.id}`)
+      .delete(`/doctors/me/blocks/${range.body.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(404);
   });
 
-  it('forbids patients and other doctors from managing a schedule', async () => {
+  it('manages only its own schedule and keeps doctors isolated', async () => {
     const patient = await registerUser(app, 'patient', 'Patient');
     const doctorA = await registerUser(app, 'doctor', 'Dr A');
     const doctorB = await registerUser(app, 'doctor', 'Dr B');
@@ -170,15 +170,28 @@ describe('Doctors (e2e)', () => {
     );
 
     await request(app.getHttpServer())
-      .put(`/doctors/${doctorA.user.id}/schedule`)
+      .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${patient.token}`)
       .send({ entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }] })
       .expect(403);
 
     await request(app.getHttpServer())
-      .put(`/doctors/${doctorA.user.id}/schedule`)
+      .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctorB.token}`)
-      .send({ entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }] })
-      .expect(403);
+      .send({ entries: [{ dayOfWeek: 1, startTime: '08:00', endTime: '12:00' }] })
+      .expect(200);
+
+    const a = await request(app.getHttpServer())
+      .get('/doctors/me/schedule')
+      .set('Authorization', `Bearer ${doctorA.token}`)
+      .expect(200);
+    expect(a.body).toHaveLength(0);
+
+    const b = await request(app.getHttpServer())
+      .get('/doctors/me/schedule')
+      .set('Authorization', `Bearer ${doctorB.token}`)
+      .expect(200);
+    expect(b.body).toHaveLength(1);
+    expect(b.body[0]).toMatchObject({ dayOfWeek: 1 });
   });
 });

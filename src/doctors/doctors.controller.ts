@@ -2,7 +2,6 @@ import {
   Body,
   Controller,
   Delete,
-  ForbiddenException,
   Get,
   HttpCode,
   HttpStatus,
@@ -30,12 +29,6 @@ import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 export class DoctorsController {
   constructor(private readonly doctors: DoctorsService) {}
 
-  private assertOwn(id: number, user: JwtPayload) {
-    if (user.sub !== id) {
-      throw new ForbiddenException('You can only manage your own schedule');
-    }
-  }
-
   @Get()
   @Roles('patient', 'doctor')
   @ApiOperation({ summary: 'List doctors' })
@@ -53,63 +46,42 @@ export class DoctorsController {
     return this.doctors.getAvailableSlots(id, query.from, query.to);
   }
 
-  @Get(':id/schedule')
-  @ApiOperation({ summary: 'Get a doctor weekly schedule' })
-  getSchedule(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
-    this.assertOwn(id, user);
-    return this.doctors.getSchedule(id);
+  @Get('me/schedule')
+  @ApiOperation({ summary: "Get the current doctor's weekly schedule" })
+  getSchedule(@CurrentUser() user: JwtPayload) {
+    return this.doctors.getSchedule(user.sub);
   }
 
-  @Put(':id/schedule')
+  @Put('me/schedule')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Replace a doctor weekly schedule' })
+  @ApiOperation({ summary: "Replace the current doctor's weekly schedule" })
   @ApiResponse({ status: 200, description: 'Schedule updated' })
-  replaceSchedule(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpsertScheduleDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    this.assertOwn(id, user);
-    return this.doctors.replaceSchedule(id, dto.entries);
+  replaceSchedule(@Body() dto: UpsertScheduleDto, @CurrentUser() user: JwtPayload) {
+    return this.doctors.replaceSchedule(user.sub, dto.entries);
   }
 
-  @Post(':id/blocks')
+  @Post('me/blocks')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Block a date or time range for a doctor' })
+  @ApiOperation({ summary: 'Block a date or time range for the current doctor' })
   @ApiResponse({ status: 201, description: 'Block created' })
-  addBlock(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: CreateBlockDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    this.assertOwn(id, user);
-    return this.doctors.addBlock(id, dto);
+  addBlock(@Body() dto: CreateBlockDto, @CurrentUser() user: JwtPayload) {
+    return this.doctors.addBlock(user.sub, dto);
   }
 
-  @Delete(':id/blocks/:blockId')
+  @Delete('me/blocks/:blockId')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove a blocked date/time range' })
   @ApiResponse({ status: 200, description: 'Block removed' })
   @ApiResponse({ status: 404, description: 'Block not found' })
-  removeBlock(
-    @Param('id', ParseIntPipe) id: number,
-    @Param('blockId', ParseIntPipe) blockId: number,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    this.assertOwn(id, user);
-    return this.doctors.removeBlock(id, blockId);
+  removeBlock(@Param('blockId', ParseIntPipe) blockId: number, @CurrentUser() user: JwtPayload) {
+    return this.doctors.removeBlock(user.sub, blockId);
   }
 
-  @Patch(':id')
+  @Patch('me')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Set a doctor slot duration (15, 30 or 60 minutes)' })
+  @ApiOperation({ summary: 'Set the current doctor slot duration (15, 30 or 60 minutes)' })
   @ApiResponse({ status: 200, description: 'Slot duration updated' })
-  setSlotDuration(
-    @Param('id', ParseIntPipe) id: number,
-    @Body() dto: SetSlotDurationDto,
-    @CurrentUser() user: JwtPayload,
-  ) {
-    this.assertOwn(id, user);
-    return this.doctors.setSlotDuration(id, dto.slotDurationMin);
+  setSlotDuration(@Body() dto: SetSlotDurationDto, @CurrentUser() user: JwtPayload) {
+    return this.doctors.setSlotDuration(user.sub, dto.slotDurationMin);
   }
 }

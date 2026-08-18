@@ -174,10 +174,12 @@ No rows pulled into JS for aggregation (explicit requirement).
 ```
 POST   /auth/register
 POST   /auth/login
-PUT    /doctors/:id/schedule                      (doctor)
-POST   /doctors/:id/blocks                        (doctor)
-DELETE /doctors/:id/blocks/:id                    (doctor)
-GET    /doctors/:id/slots?from&to                 (any authenticated)
+PUT    /doctors/me/schedule                        (doctor)
+GET    /doctors/me/schedule                        (doctor)
+POST   /doctors/me/blocks                          (doctor)
+DELETE /doctors/me/blocks/:id                      (doctor)
+PATCH  /doctors/me                                 (doctor, slot duration)
+GET    /doctors/:id/slots?from&to                  (any authenticated)
 GET    /doctors/:id/analytics?month=YYYY-MM       (doctor)
 POST   /appointments      { doctorId, startTime } (patient)
 DELETE /appointments/:id                          (patient)

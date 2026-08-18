@@ -60,12 +60,12 @@ describe('Slots (e2e)', () => {
     );
     const day = nextDayOfWeek(0);
     await request(app.getHttpServer())
-      .patch(`/doctors/${doctor.user.id}`)
+      .patch('/doctors/me')
       .set('Authorization', `Bearer ${doctor.token}`)
       .send({ slotDurationMin: 30 })
       .expect(200);
     await request(app.getHttpServer())
-      .put(`/doctors/${doctor.user.id}/schedule`)
+      .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctor.token}`)
       .send({ entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }] })
       .expect(200);
@@ -85,7 +85,7 @@ describe('Slots (e2e)', () => {
 
     // Full-day block => no slots
     const block = await request(app.getHttpServer())
-      .post(`/doctors/${doctor.user.id}/blocks`)
+      .post('/doctors/me/blocks')
       .set('Authorization', `Bearer ${doctor.token}`)
       .send({ blockDate: day })
       .expect(201);
@@ -97,11 +97,11 @@ describe('Slots (e2e)', () => {
 
     // Remove block, add a time-range block => 2 slots excluded
     await request(app.getHttpServer())
-      .delete(`/doctors/${doctor.user.id}/blocks/${block.body.id}`)
+      .delete(`/doctors/me/blocks/${block.body.id}`)
       .set('Authorization', `Bearer ${doctor.token}`)
       .expect(200);
     const range = await request(app.getHttpServer())
-      .post(`/doctors/${doctor.user.id}/blocks`)
+      .post('/doctors/me/blocks')
       .set('Authorization', `Bearer ${doctor.token}`)
       .send({ blockDate: day, startTime: '12:30', endTime: '13:30' })
       .expect(201);
@@ -116,7 +116,7 @@ describe('Slots (e2e)', () => {
 
     // Booked (scheduled) appointment excludes that slot
     await request(app.getHttpServer())
-      .delete(`/doctors/${doctor.user.id}/blocks/${range.body.id}`)
+      .delete(`/doctors/me/blocks/${range.body.id}`)
       .set('Authorization', `Bearer ${doctor.token}`)
       .expect(200);
     const [appt] = await db
