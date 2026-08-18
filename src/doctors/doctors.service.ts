@@ -19,6 +19,19 @@ const toHHMM = (t: string | null): string | null => (t ? t.slice(0, 5) : t);
 export class DoctorsService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
+  async listDoctors() {
+    return this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        slotDurationMin: users.slotDurationMin,
+      })
+      .from(users)
+      .where(eq(users.role, 'doctor'))
+      .orderBy(users.name);
+  }
+
   async replaceSchedule(doctorId: number, entries: ScheduleEntryDto[]) {
     const seen = new Set<number>();
     for (const entry of entries) {

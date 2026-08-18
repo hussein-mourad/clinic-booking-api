@@ -34,6 +34,14 @@ export class DoctorsController {
     }
   }
 
+  @Get()
+  @Roles('patient', 'doctor')
+  @ApiOperation({ summary: 'List doctors' })
+  @ApiResponse({ status: 200, description: 'Array of doctors' })
+  list() {
+    return this.doctors.listDoctors();
+  }
+
   @Get(':id/schedule')
   @ApiOperation({ summary: 'Get a doctor weekly schedule' })
   getSchedule(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {

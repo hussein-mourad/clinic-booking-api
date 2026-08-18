@@ -39,6 +39,27 @@ describe('Doctors (e2e)', () => {
     await request(app.getHttpServer()).get('/doctors/1/schedule').expect(401);
   });
 
+  it('lists doctors for any authenticated user', async () => {
+    const patient = await registerUser(app, 'patient', 'Patient Lister');
+    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email);
+    const doctor = await registerUser(app, 'doctor', 'Dr Listed');
+    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email);
+
+    const res = await request(app.getHttpServer())
+      .get('/doctors')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body.map((d: { id: number }) => d.id)).toContain(doctor.user.id);
+    expect(res.body.find((d: { id: number }) => d.id === doctor.user.id)).toMatchObject({
+      name: 'Dr Listed',
+      slotDurationMin: 15,
+    });
+
+    await request(app.getHttpServer()).get('/doctors').expect(401);
+  });
+
   it('doctor sets and reads a weekly schedule', async () => {
     const { token, user } = await registerUser(app, 'doctor', 'Dr Schedule');
     emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);

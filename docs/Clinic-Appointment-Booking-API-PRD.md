@@ -10,14 +10,18 @@
 ## 1. Overview
 
 ### 1.1 Summary
+
 A REST API that allows patients to book appointments with doctors at a medical clinic. Doctors define recurring weekly availability and can block out specific dates/times. Patients search for open slots, book them, and cancel them under defined rules. The system must remain correct and fast under concurrent load across multiple API instances, support a waiting list for fully booked slots, and offload non-critical work (reminders, waitlist reassignment) to background jobs.
 
 ### 1.2 Problem Statement
+
 Manual or naive booking systems break down under two real-world pressures:
+
 - **Concurrency:** popular doctors' slots can be requested by multiple patients at the exact same moment, across multiple load-balanced app instances. Without proper handling, double-bookings occur.
 - **Scale:** as appointment history grows (target: ~200 doctors, ~2M appointment rows), slot-availability queries must stay fast.
 
 ### 1.3 Goals
+
 - Prevent double-booking of a single slot under concurrent, multi-instance load.
 - Keep slot-lookup performant at scale via proper indexing.
 - Give patients a fallback (waiting list) when a desired slot is full.
@@ -25,6 +29,7 @@ Manual or naive booking systems break down under two real-world pressures:
 - Produce a codebase that is understandable, tested where it matters, and documented.
 
 ### 1.4 Non-Goals
+
 - Production-grade authentication/authorization (JWT with two simple roles is sufficient; no SSO, password reset flow, etc.)
 - Real email/SMS delivery (logging or a notifications table stands in for actual sending).
 - 100% test coverage — only booking-critical logic needs solid coverage.
@@ -34,10 +39,10 @@ Manual or naive booking systems break down under two real-world pressures:
 
 ## 2. Users & Roles
 
-| Role | Description | Key actions |
-|---|---|---|
+| Role        | Description                   | Key actions                                                                    |
+| ----------- | ----------------------------- | ------------------------------------------------------------------------------ |
 | **Patient** | End user booking appointments | View available slots, book a slot, cancel a booking, join/leave a waiting list |
-| **Doctor** | Clinic practitioner | Define weekly working schedule, set slot duration, block specific dates/times |
+| **Doctor**  | Clinic practitioner           | Define weekly working schedule, set slot duration, block specific dates/times  |
 
 Auth is JWT-based and role-aware, but intentionally minimal — auth is not the focus of the assessment.
 
@@ -46,20 +51,25 @@ Auth is JWT-based and role-aware, but intentionally minimal — auth is not the 
 ## 3. Functional Requirements
 
 ### 3.1 Doctor Scheduling
+
 - A doctor has a **weekly recurring schedule** (e.g., Sunday–Thursday, 10:00–16:00).
 - A doctor has a **configurable slot duration**: 15, 30, or 60 minutes.
 - A doctor can **block specific dates or time ranges** (vacation, emergencies) which override the recurring schedule.
 
 ### 3.2 Slot Availability
+
 - Patients can **list a doctor's available slots** for a given date range.
 - Available slots are computed from: weekly schedule − blocked dates/times − already-booked slots.
 
 ### 3.3 Booking
+
 - A patient can **book an available slot**.
 - A patient can **cancel a booking**, except when the appointment starts in **less than 2 hours**, in which case cancellation is rejected.
 
 ### 3.4 Doctor Analytics Endpoint
+
 For a given doctor and month, return:
+
 - Total appointments
 - Cancellation rate
 - Peak booking hours
@@ -68,11 +78,13 @@ For a given doctor and month, return:
 **Constraint:** must be computed via SQL (raw query or query builder) — not by pulling rows into application memory and aggregating in JavaScript.
 
 ### 3.5 Waiting List
+
 - If a slot is taken, a patient may **join a queue** for that slot.
 - If the booking on that slot is **cancelled**, the slot is offered to someone from the queue.
 - Queue ordering, notification method, expiry of an offer, and edge-case handling are left to the implementer's discretion — but assumptions must be documented.
 
 ### 3.6 Background Jobs (BullMQ + Redis or equivalent)
+
 - **Reminders:** on booking confirmation, schedule a reminder job for T-24h before the appointment. If the booking is later cancelled, the reminder must not fire.
 - **Waiting-list processing:** slot reassignment after a cancellation happens in a background job, not inline in the cancellation request.
 - **Reliability:** jobs must be safely retryable — a retry must not cause duplicate reminders or double-assign a slot to two people.
@@ -82,18 +94,22 @@ For a given doctor and month, return:
 ## 4. Non-Functional Requirements
 
 ### 4.1 Concurrency Safety
+
 - Two simultaneous booking requests for the same slot — even across different app instances behind a load balancer — must never both succeed.
 - Enforcement must happen at the **database level** (not in-app locks, since the app is horizontally scaled).
 - README must document the chosen approach (e.g., unique constraint, `SELECT ... FOR UPDATE`, advisory locks) and alternatives considered.
 
 ### 4.2 Performance at Scale
+
 - Design must remain performant assuming **~200 doctors** and **~2,000,000 appointment rows**.
 - Appropriate indexes must be added for slot-availability queries; README must explain which indexes and why.
 
 ### 4.3 Reliability
+
 - Background job failures (Redis hiccup, worker restart) must be recoverable via retry without side effects (no duplicate reminders, no double slot assignment).
 
 ### 4.4 Data Integrity
+
 - No `synchronize: true` in production configuration — schema changes go through migrations.
 
 ---
