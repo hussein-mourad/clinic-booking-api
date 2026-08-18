@@ -18,7 +18,7 @@ Architecture: NestJS (Express) + Drizzle ORM + Postgres 16 + Redis 7 (BullMQ) + 
 - [x] **7. Reminder job** — BullMQ T-24h, deterministic jobId, cancel removes it
 - [x] **8. Waitlist** — join/leave/offer/accept/expiry + processing job
 - [x] **9. Analytics** — monthly SQL aggregates endpoint
-- [ ] **10. Tests + seed** — unit/e2e, `npm run test:concurrency` (N=25 -> 1x201, 24x409), demo seed
-- [ ] **11. README + polish** — setup, concurrency + alternatives, index rationale, waitlist assumptions, AI-usage section, future work
+- [x] **10. Tests + seed** — unit/e2e, `npm run test:concurrency` (N=25 -> 1x201, 24x409), demo seed
+- [x] **11. README + polish** — setup, concurrency + alternatives, index rationale, waitlist assumptions, AI-usage section, future work
 
 Each milestone lands as one or more focused commits (deliverable requires incremental history).

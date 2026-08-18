@@ -5,7 +5,7 @@
  * schedule, then fires N simultaneous bookings for the exact same slot and
  * asserts exactly ONE 201 and N-1 x 409. Requires the app + Postgres running.
  *
- * Usage: npm run test:live   (after `npm run dev` / `docker compose up`)
+ * Usage: npm run proof   (after `npm run dev` / `docker compose up`)
  */
 
 const API = process.env.API_URL ?? 'http://localhost:3000';
