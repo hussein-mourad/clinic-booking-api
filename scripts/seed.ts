@@ -1,8 +1,8 @@
 /**
  * End-to-end demo seed for the clinic booking API.
  *
- * Creates (or logs in) a demo doctor with a full-week schedule and a few
- * patients, then writes the doctor's working hours and slot duration through
+ * Creates (or logs in) a demo doctor with a Sunday-Thursday 10:00-16:00
+ * schedule and a few patients, then writes the doctor's working hours and slot duration through
  * the public API (the same path a real client uses). Idempotent: re-running
  * reuses existing accounts.
  *
@@ -88,10 +88,10 @@ async function main() {
     'PUT',
     '/doctors/me/schedule',
     {
-      entries: [0, 1, 2, 3, 4, 5, 6].map((dayOfWeek) => ({
+      entries: [0, 1, 2, 3, 4].map((dayOfWeek) => ({
         dayOfWeek,
-        startTime: '09:00',
-        endTime: '17:00',
+        startTime: '10:00',
+        endTime: '16:00',
       })),
     },
     doctor.token,
