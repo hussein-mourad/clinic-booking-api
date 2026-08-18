@@ -16,7 +16,7 @@ Architecture: NestJS (Express) + Drizzle ORM + Postgres 16 + Redis 7 (BullMQ) + 
 - [x] **5. Slot availability** — `GET /doctors/:id/slots?from&to` query
 - [x] **6. Booking + concurrency guard** — book/cancel, 2h cancel window, partial unique index proof
 - [x] **7. Reminder job** — BullMQ T-24h, deterministic jobId, cancel removes it
-- [ ] **8. Waitlist** — join/leave/offer/accept/expiry + processing job
+- [x] **8. Waitlist** — join/leave/offer/accept/expiry + processing job
 - [ ] **9. Analytics** — monthly SQL aggregates endpoint
 - [ ] **10. Tests + seed** — unit/e2e, `npm run test:concurrency` (N=25 -> 1x201, 24x409), demo seed
 - [ ] **11. README + polish** — setup, concurrency + alternatives, index rationale, waitlist assumptions, AI-usage section, future work

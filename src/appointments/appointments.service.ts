@@ -23,6 +23,12 @@ import {
 } from '../jobs/reminders.constants';
 import { BookDto } from './dto/book.dto';
 import { resolveBookableSlot } from './booking';
+import {
+  WAITLIST_PROCESS_JOB,
+  WAITLIST_QUEUE,
+  waitlistProcessJobId,
+  type WaitlistProcessData,
+} from '../waitlist/waitlist.constants';
 
 export const CANCEL_WINDOW_MS = 2 * 60 * 60 * 1000;
 
@@ -34,6 +40,7 @@ export class AppointmentsService {
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly doctors: DoctorsService,
     @InjectQueue(REMINDERS_QUEUE) private readonly reminders: Queue<ReminderJobData>,
+    @InjectQueue(WAITLIST_QUEUE) private readonly waitlistQueue: Queue<WaitlistProcessData>,
   ) {}
 
   async book(patientId: number, dto: BookDto) {
@@ -143,6 +150,25 @@ export class AppointmentsService {
       await this.reminders.remove(reminderJobId(appointmentId));
     } catch (err) {
       this.logger.error(`failed to remove reminder for appointment ${appointmentId}`, err);
+    }
+
+    // The slot just freed up: have the waitlist queue recurse to the next FIFO
+    // candidate. Deterministic jobId makes a retried/duplicate trigger harmless.
+    try {
+      await this.waitlistQueue.add(
+        WAITLIST_PROCESS_JOB,
+        {
+          doctorId: appointment.doctorId,
+          slotStart: appointment.startTime.toISOString(),
+        },
+        {
+          jobId: waitlistProcessJobId(appointmentId),
+          attempts: 5,
+          backoff: { type: 'exponential', delay: 1_000 },
+        },
+      );
+    } catch (err) {
+      this.logger.error(`failed to enqueue waitlist processing for appointment ${appointmentId}`, err);
     }
 
     return cancelled!;
