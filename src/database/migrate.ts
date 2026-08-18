@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { existsSync } from 'node:fs';
 import { resolve } from 'node:path';
 import { Pool } from 'pg';
