@@ -125,6 +125,37 @@ export class DoctorsService {
   }
 
   async getAvailableSlots(doctorId: number, from: string, to: string) {
+    this.assertRange(from, to);
+    const source = await this.loadSlotSource(doctorId, from, to);
+    return generateSlots({
+      schedule: source.schedule,
+      blocks: source.blocks,
+      bookedStarts: source.bookedRows.map((row) => new Date(row.startTime)),
+      from,
+      to,
+      durationMin: source.duration,
+    });
+  }
+
+  /**
+   * Same grid as getAvailableSlots but ignores current bookings. Booking
+   * validation uses this so a legit-but-taken slot reaches the INSERT guard
+   * (which yields 409) instead of being rejected early with a 400.
+   */
+  async getSchedulableSlots(doctorId: number, from: string, to: string) {
+    this.assertRange(from, to);
+    const source = await this.loadSlotSource(doctorId, from, to);
+    return generateSlots({
+      schedule: source.schedule,
+      blocks: source.blocks,
+      bookedStarts: [],
+      from,
+      to,
+      durationMin: source.duration,
+    });
+  }
+
+  private assertRange(from: string, to: string) {
     if (to < from) {
       throw new BadRequestException('to must be on or after from');
     }
@@ -134,7 +165,9 @@ export class DoctorsService {
     if (rangeDays < 0 || rangeDays > MAX_SLOT_RANGE_DAYS) {
       throw new BadRequestException(`date range must be within ${MAX_SLOT_RANGE_DAYS} days`);
     }
+  }
 
+  private async loadSlotSource(doctorId: number, from: string, to: string) {
     const doctor = await this.db
       .select({ id: users.id, slotDurationMin: users.slotDurationMin })
       .from(users)
@@ -143,7 +176,6 @@ export class DoctorsService {
     if (doctor.length === 0) {
       throw new NotFoundException('Doctor not found');
     }
-    const duration = doctor[0]!.slotDurationMin;
 
     const [schedule, blocks, bookedRows] = await Promise.all([
       this.db.select().from(schedules).where(eq(schedules.doctorId, doctorId)),
@@ -170,13 +202,6 @@ export class DoctorsService {
         ),
     ]);
 
-    return generateSlots({
-      schedule,
-      blocks,
-      bookedStarts: bookedRows.map((row) => new Date(row.startTime)),
-      from,
-      to,
-      durationMin: duration,
-    });
+    return { duration: doctor[0]!.slotDurationMin, schedule, blocks, bookedRows };
   }
 }
