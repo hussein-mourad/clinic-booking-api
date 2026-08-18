@@ -1,16 +1,26 @@
+import { InjectQueue } from '@nestjs/bullmq';
 import {
   BadRequestException,
   ConflictException,
   Inject,
   Injectable,
+  Logger,
   NotFoundException,
   UnprocessableEntityException,
 } from '@nestjs/common';
+import { Queue } from 'bullmq';
 import { and, asc, eq } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
 import type { Database } from '../database/database.module';
 import { appointments, users } from '../database/schema';
 import { DoctorsService } from '../doctors/doctors.service';
+import {
+  REMINDER_JOB,
+  REMINDER_LEAD_MS,
+  REMINDERS_QUEUE,
+  reminderJobId,
+  ReminderJobData,
+} from '../jobs/reminders.constants';
 import { BookDto } from './dto/book.dto';
 import { resolveBookableSlot } from './booking';
 
@@ -18,9 +28,12 @@ export const CANCEL_WINDOW_MS = 2 * 60 * 60 * 1000;
 
 @Injectable()
 export class AppointmentsService {
+  private readonly logger = new Logger(AppointmentsService.name);
+
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly doctors: DoctorsService,
+    @InjectQueue(REMINDERS_QUEUE) private readonly reminders: Queue<ReminderJobData>,
   ) {}
 
   async book(patientId: number, dto: BookDto) {
@@ -51,7 +64,42 @@ export class AppointmentsService {
       .returning();
     if (!appointment) throw new ConflictException('Slot already taken');
 
+    await this.scheduleReminder(appointment);
     return appointment;
+  }
+
+  private async scheduleReminder(appointment: {
+    id: number;
+    doctorId: number;
+    startTime: Date;
+  }) {
+    const delayMs = Math.max(
+      0,
+      new Date(appointment.startTime).getTime() - Date.now() - REMINDER_LEAD_MS,
+    );
+    try {
+      await this.reminders.add(
+        REMINDER_JOB,
+        {
+          appointmentId: appointment.id,
+          doctorId: appointment.doctorId,
+          startTime: appointment.startTime.toISOString(),
+        },
+        {
+          jobId: reminderJobId(appointment.id),
+          delay: delayMs,
+          attempts: 3,
+          backoff: { type: 'exponential', delay: 1_000 },
+        },
+      );
+    } catch (err) {
+      // Booking is primary; a queue outage must not fail an accepted booking.
+      this.logger.error(
+        `failed to enqueue reminder for appointment ${appointment.id}: ${
+          (err as Error).message ?? err
+        }`,
+      );
+    }
   }
 
   async mine(patientId: number) {
@@ -90,6 +138,13 @@ export class AppointmentsService {
         ),
       )
       .returning();
+
+    try {
+      await this.reminders.remove(reminderJobId(appointmentId));
+    } catch (err) {
+      this.logger.error(`failed to remove reminder for appointment ${appointmentId}`, err);
+    }
+
     return cancelled!;
   }
 }

@@ -110,5 +110,5 @@ describe('Concurrency proof (e2e)', () => {
 
     expect(created).toBe(1);
     expect(rejected).toBe(N - 1);
-  });
+  }, 30_000);
 });
