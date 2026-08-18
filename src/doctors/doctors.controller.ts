@@ -11,6 +11,7 @@ import {
   Patch,
   Post,
   Put,
+  Query,
 } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
@@ -18,6 +19,7 @@ import type { JwtPayload } from '../auth/jwt-payload';
 import { Roles } from '../auth/roles.decorator';
 import { DoctorsService } from './doctors.service';
 import { CreateBlockDto } from './dto/create-block.dto';
+import { ListSlotsQuery } from './dto/list-slots-query.dto';
 import { SetSlotDurationDto } from './dto/set-slot-duration.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 
@@ -40,6 +42,15 @@ export class DoctorsController {
   @ApiResponse({ status: 200, description: 'Array of doctors' })
   list() {
     return this.doctors.listDoctors();
+  }
+
+  @Get(':id/slots')
+  @Roles('patient', 'doctor')
+  @ApiOperation({ summary: 'List available appointment slots for a doctor' })
+  @ApiResponse({ status: 200, description: 'Array of available slots' })
+  @ApiResponse({ status: 404, description: 'Doctor not found' })
+  slots(@Param('id', ParseIntPipe) id: number, @Query() query: ListSlotsQuery) {
+    return this.doctors.getAvailableSlots(id, query.from, query.to);
   }
 
   @Get(':id/schedule')
