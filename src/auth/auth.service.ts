@@ -2,11 +2,12 @@ import { ConflictException, Inject, Injectable, UnauthorizedException } from '@n
 import { eq } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { DRIZZLE, Database } from '../database/database.module';
+import { DRIZZLE } from '../database/database.module';
+import type { Database } from '../database/database.module';
 import { users } from '../database/schema';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
-import { JwtPayload } from './jwt-payload';
+import type { JwtPayload } from './jwt-payload';
 
 export interface AuthResult {
   token: string;

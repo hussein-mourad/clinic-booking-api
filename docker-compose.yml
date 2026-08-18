@@ -28,6 +28,9 @@ services:
       retries: 10
 
   api:
+    # Full-stack mode: `docker compose up` boots everything with one command.
+    # For fast local development, use `bun run dev:infra` (db + redis only)
+    # and run the app with `bun run start:dev` (hot reload on your machine).
     build: .
     depends_on:
       db:

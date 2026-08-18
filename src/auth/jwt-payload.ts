@@ -1,4 +1,4 @@
-import { UserRole } from './roles.decorator';
+import type { UserRole } from './roles.decorator';
 
 export interface JwtPayload {
   sub: number;

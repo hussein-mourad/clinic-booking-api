@@ -7,7 +7,7 @@ import {
   MaxLength,
   MinLength,
 } from 'class-validator';
-import { UserRole } from '../roles.decorator';
+import type { UserRole } from '../roles.decorator';
 
 export class RegisterDto {
   @ApiProperty({ example: 'patient@example.com' })

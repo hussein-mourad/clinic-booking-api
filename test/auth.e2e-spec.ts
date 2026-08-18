@@ -3,7 +3,8 @@ import { Pool } from 'pg';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { createApp } from '../src/app.factory';
-import { DRIZZLE, DATABASE_POOL, Database } from '../src/database/database.module';
+import { DRIZZLE, DATABASE_POOL } from '../src/database/database.module';
+import type { Database } from '../src/database/database.module';
 import { users } from '../src/database/schema';
 
 describe('Auth (e2e)', () => {
