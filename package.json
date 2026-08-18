@@ -16,10 +16,10 @@
     "test:cov": "jest --coverage",
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:concurrency": "jest --config ./test/jest-e2e.json --runInBand concurrency",
-    "migrate:generate": "drizzle-kit generate",
-    "migrate": "tsx src/database/migrate.ts",
-    "seed": "tsx scripts/seed.ts",
-    "db:studio": "drizzle-kit studio"
+    "db:generate": "drizzle-kit generate",
+    "db:studio": "drizzle-kit studio",
+    "db:migrate": "tsx src/database/migrate.ts",
+    "seed": "tsx scripts/seed.ts"
   },
   "jest": {
     "moduleFileExtensions": [
@@ -42,7 +42,10 @@
     "@nestjs/common": "^11.1.3",
     "@nestjs/config": "^4.0.2",
     "@nestjs/core": "^11.1.3",
+    "@nestjs/jwt": "^11.0.2",
     "@nestjs/platform-express": "^11.1.3",
+    "@nestjs/swagger": "^11.4.7",
+    "bcryptjs": "^3.0.3",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.15.1",
     "dotenv": "^17.4.2",
@@ -56,6 +59,7 @@
     "@nestjs/cli": "^11.0.7",
     "@nestjs/schematics": "^11.0.5",
     "@nestjs/testing": "^11.1.3",
+    "@types/bcryptjs": "^3.0.0",
     "@types/express": "^5.0.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^22.14.1",

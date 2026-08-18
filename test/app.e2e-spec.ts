@@ -1,27 +1,14 @@
-import { Test, TestingModule } from '@nestjs/testing';
 import { INestApplication } from '@nestjs/common';
 import { Pool } from 'pg';
 import request from 'supertest';
-import { AppModule } from '../src/app.module';
+import { createApp } from '../src/app.factory';
 import { DATABASE_POOL } from '../src/database/database.module';
-import { ValidationPipe } from '@nestjs/common';
 
 describe('App (e2e)', () => {
   let app: INestApplication;
 
   beforeAll(async () => {
-    const moduleFixture: TestingModule = await Test.createTestingModule({
-      imports: [AppModule],
-    }).compile();
-
-    app = moduleFixture.createNestApplication();
-    app.useGlobalPipes(
-      new ValidationPipe({
-        whitelist: true,
-        transform: true,
-        forbidNonWhitelisted: true,
-      }),
-    );
+    app = await createApp();
     await app.init();
   });
 

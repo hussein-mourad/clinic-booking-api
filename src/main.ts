@@ -1,20 +1,19 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
+import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import { createApp } from './app.factory';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  const app = await createApp();
+
+  const swaggerConfig = new DocumentBuilder()
+    .setTitle('Clinic Booking API')
+    .setDescription('REST API for clinic appointment booking')
+    .setVersion('0.1.0')
+    .addBearerAuth()
+    .build();
+  const document = SwaggerModule.createDocument(app, swaggerConfig);
+  SwaggerModule.setup('api-docs', app, document);
+
   const port = Number(process.env.PORT ?? 3000);
-  if (!Number.isInteger(port) || port <= 0) {
-    throw new Error(`Invalid PORT value: ${process.env.PORT}`);
-  }
   await app.listen(port);
   console.log(`API listening on ${await app.getUrl()}`);
 }

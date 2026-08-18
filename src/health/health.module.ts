@@ -1,7 +1,9 @@
 import { Controller, Get, Injectable, Module } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { Inject, Logger } from '@nestjs/common';
+import { ApiTags } from '@nestjs/swagger';
 import { DRIZZLE, Database } from '../database/database.module';
+import { Public } from '../auth/public.decorator';
 
 @Injectable()
 export class HealthService {
@@ -20,10 +22,12 @@ export class HealthService {
   }
 }
 
+@ApiTags('health')
 @Controller('health')
 export class HealthController {
-  constructor(private readonly health: HealthService) { }
+  constructor(private readonly health: HealthService) {}
 
+  @Public()
   @Get()
   check() {
     return this.health.check();
