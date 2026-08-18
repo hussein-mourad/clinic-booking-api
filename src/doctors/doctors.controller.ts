@@ -17,6 +17,7 @@ import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload';
 import { Roles } from '../auth/roles.decorator';
 import { DoctorsService } from './doctors.service';
+import { AnalyticsQuery } from './dto/analytics-query.dto';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { ListSlotsQuery } from './dto/list-slots-query.dto';
 import { SetSlotDurationDto } from './dto/set-slot-duration.dto';
@@ -50,6 +51,14 @@ export class DoctorsController {
   @ApiOperation({ summary: "Get the current doctor's weekly schedule" })
   getSchedule(@CurrentUser() user: JwtPayload) {
     return this.doctors.getSchedule(user.sub);
+  }
+
+  @Get(':id/analytics')
+  @ApiOperation({ summary: 'Monthly analytics for a doctor (pure SQL aggregation)' })
+  @ApiResponse({ status: 200, description: 'Monthly metrics' })
+  @ApiResponse({ status: 404, description: 'Doctor not found' })
+  analytics(@Param('id', ParseIntPipe) id: number, @Query() query: AnalyticsQuery) {
+    return this.doctors.getAnalytics(id, query.month);
   }
 
   @Put('me/schedule')

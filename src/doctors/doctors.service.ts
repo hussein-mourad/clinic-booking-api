@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, gte, lte } from 'drizzle-orm';
+import { and, eq, gte, lte, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
 import type { Database } from '../database/database.module';
 import { appointments, blockedSlots, schedules, users } from '../database/schema';
@@ -153,6 +153,81 @@ export class DoctorsService {
       to,
       durationMin: source.duration,
     });
+  }
+
+  /**
+   * Monthly analytics for a doctor, aggregated entirely in SQL (no rows are
+   * pulled into JS). All values are derived in one query:
+   *  - total_appointments: appointments whose slot falls in the month
+   *  - cancellation_rate: cancelled / total
+   *  - peak_booking_hours: mode() of the UTC booking hour (created_at)
+   *  - avg_utilization: sum(booked minutes) / sum(scheduled minutes minus blocks)
+   */
+  async getAnalytics(doctorId: number, month: string) {
+    const [doctor] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, doctorId), eq(users.role, 'doctor')))
+      .limit(1);
+    if (!doctor) throw new NotFoundException('Doctor not found');
+
+    const [year, mon] = month.split('-').map(Number);
+    const monthStart = new Date(Date.UTC(year!, mon! - 1, 1));
+    const monthEnd = new Date(Date.UTC(year!, mon!, 1));
+
+    const result = await this.db.execute<{
+      total_appointments: number;
+      cancellation_rate: number;
+      peak_booking_hours: number | null;
+      avg_utilization: number;
+    }>(sql`
+      WITH booked AS (
+        SELECT
+          count(*)::numeric AS total,
+          count(*) FILTER (WHERE appointments.status = 'cancelled')::numeric AS cancelled,
+          coalesce(sum(extract(epoch FROM (appointments.end_time - appointments.start_time)) / 60), 0) AS booked_minutes,
+          mode() WITHIN GROUP (ORDER BY extract(hour FROM appointments.created_at AT TIME ZONE 'UTC')) AS peak_hour
+        FROM appointments
+        WHERE appointments.doctor_id = ${doctorId}
+          AND appointments.start_time >= ${monthStart}
+          AND appointments.start_time < ${monthEnd}
+      ),
+      scheduled AS (
+        SELECT coalesce(sum(
+            extract(epoch FROM (schedules.end_time - schedules.start_time)) / 60
+            - (
+              SELECT coalesce(sum(extract(epoch FROM
+                  least(schedules.end_time, coalesce(blocks.end_time, schedules.end_time))
+                  - greatest(schedules.start_time, coalesce(blocks.start_time, schedules.start_time))) / 60), 0)
+              FROM blocked_slots blocks
+              WHERE blocks.doctor_id = schedules.doctor_id
+                AND blocks.block_date = days.day
+                AND (blocks.start_time IS NULL
+                     OR (blocks.start_time < schedules.end_time AND blocks.end_time > schedules.start_time))
+            )
+        ), 0) AS available_minutes
+        FROM schedules
+        CROSS JOIN LATERAL (
+          SELECT (generate_series(${monthStart}::timestamptz,
+                                  ${monthEnd}::timestamptz - interval '1 day',
+                                  interval '1 day'))::date AS day
+        ) days
+        WHERE schedules.doctor_id = ${doctorId}
+          AND extract(dow FROM days.day) = schedules.day_of_week
+      )
+      SELECT
+        booked.total::int AS total_appointments,
+        CASE WHEN booked.total > 0
+             THEN round(booked.cancelled / booked.total, 4)::float8
+             ELSE 0 END AS cancellation_rate,
+        booked.peak_hour::int AS peak_booking_hours,
+        CASE WHEN scheduled.available_minutes > 0
+             THEN round(booked.booked_minutes / scheduled.available_minutes, 4)::float8
+             ELSE 0 END AS avg_utilization
+      FROM booked, scheduled
+    `);
+
+    return result.rows[0]!;
   }
 
   private assertRange(from: string, to: string) {
