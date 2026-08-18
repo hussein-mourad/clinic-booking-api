@@ -4,11 +4,11 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq } from 'drizzle-orm';
+import { and, eq, gte, lte } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
 import type { Database } from '../database/database.module';
-import { blockedSlots, schedules, users } from '../database/schema';
-import { availableSlotsSql } from './slots.sql';
+import { appointments, blockedSlots, schedules, users } from '../database/schema';
+import { generateSlots } from './slots.generator';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { ScheduleEntryDto } from './dto/schedule-entry.dto';
 
@@ -145,13 +145,38 @@ export class DoctorsService {
     }
     const duration = doctor[0]!.slotDurationMin;
 
-    const result = await this.db.execute(
-      availableSlotsSql(doctorId, from, to, duration),
-    );
+    const [schedule, blocks, bookedRows] = await Promise.all([
+      this.db.select().from(schedules).where(eq(schedules.doctorId, doctorId)),
+      this.db
+        .select()
+        .from(blockedSlots)
+        .where(
+          and(
+            eq(blockedSlots.doctorId, doctorId),
+            gte(blockedSlots.blockDate, from),
+            lte(blockedSlots.blockDate, to),
+          ),
+        ),
+      this.db
+        .select({ startTime: appointments.startTime })
+        .from(appointments)
+        .where(
+          and(
+            eq(appointments.doctorId, doctorId),
+            eq(appointments.status, 'scheduled'),
+            gte(appointments.startTime, new Date(`${from}T00:00:00Z`)),
+            lte(appointments.startTime, new Date(`${to}T23:59:59.999Z`)),
+          ),
+        ),
+    ]);
 
-    return result.rows.map((row) => ({
-      start: new Date(row.start as string).toISOString(),
-      end: new Date(row.end as string).toISOString(),
-    }));
+    return generateSlots({
+      schedule,
+      blocks,
+      bookedStarts: bookedRows.map((row) => new Date(row.startTime)),
+      from,
+      to,
+      durationMin: duration,
+    });
   }
 }
