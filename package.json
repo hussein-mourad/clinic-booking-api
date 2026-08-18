@@ -7,7 +7,7 @@
   "scripts": {
     "build": "nest build",
     "start": "nest start",
-    "start:dev": "bun --watch src/main.ts",
+    "dev": "bun --watch src/main.ts",
     "dev:infra": "docker compose up -d db redis",
     "start:prod": "bun dist/main.js",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",

@@ -12,7 +12,7 @@ Architecture: NestJS (Express) + Drizzle ORM + Postgres 16 + Redis 7 (BullMQ) + 
 - [x] **1. Scaffold** — NestJS + Drizzle provider + docker-compose + Dockerfile + health check
 - [x] **2. Schema & migrations** — users, schedules, blocked_slots, appointments, waiting_list, notifications + indexes + first migration
 - [x] **3. Auth** — register/login, JWT, PatientGuard/DoctorGuard, bcrypt (+ Swagger API docs)
-- [ ] **4. Doctor scheduling** — weekly schedule + block endpoints
+- [x] **4. Doctor scheduling** — weekly schedule + block endpoints
 - [ ] **5. Slot availability** — `GET /doctors/:id/slots?from&to` query
 - [ ] **6. Booking + concurrency guard** — book/cancel, 2h cancel window, partial unique index proof
 - [ ] **7. Reminder job** — BullMQ T-24h, deterministic jobId, cancel removes it
