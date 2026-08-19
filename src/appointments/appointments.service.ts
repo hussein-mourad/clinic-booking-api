@@ -13,6 +13,7 @@ import { and, asc, eq } from 'drizzle-orm';
 import { DRIZZLE } from '../db/database.module';
 import type { Database } from '../db/database.module';
 import { appointments, users } from '../db';
+import type { Appointment } from '../db/types';
 import { DoctorsService } from '../doctors/doctors.service';
 import {
   REMINDER_JOB,
@@ -109,14 +110,14 @@ export class AppointmentsService {
     }
   }
 
-  async mine(patientId: number, includeHistory?: boolean) {
+  async mine(patientId: number, status?: Appointment['status']) {
     return this.db
       .select()
       .from(appointments)
       .where(
         and(
           eq(appointments.patientId, patientId),
-          includeHistory ? undefined : eq(appointments.status, 'scheduled'),
+          status ? eq(appointments.status, status) : eq(appointments.status, 'scheduled'),
         ),
       )
       .orderBy(asc(appointments.startTime));

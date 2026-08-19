@@ -10,6 +10,10 @@ get {
   auth: bearer
 }
 
+params:query {
+  status: completed
+}
+
 headers {
   Content-Type: application/json
 }
@@ -20,4 +24,6 @@ auth:bearer {
 
 docs {
   Lists the current patient's appointments (patient role only).
+  Returns scheduled (in-progress) appointments by default; use
+  ?status=scheduled|cancelled|completed to filter freely.
 }

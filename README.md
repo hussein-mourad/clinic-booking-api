@@ -3,7 +3,7 @@
 A greenfield NestJS coding-assessment project: a clinic appointment booking REST API
 with DB-level concurrency safety, BullMQ background jobs, and SQL-aggregated analytics.
 
-**Stack** — NestJS (Express) · PostgreSQL 16 · Redis 7 (BullMQ) · Drizzle ORM · JWT · Swagger.
+**Stack** — NestJS (Express) · PostgreSQL 16 · Redis 7 (BullMQ) · Drizzle ORM · JWT · Swagger · Bruno
 
 ---
 
@@ -12,17 +12,18 @@ with DB-level concurrency safety, BullMQ background jobs, and SQL-aggregated ana
 ```bash
 # one command boots everything (Postgres + Redis + API) with migrations on startup
 bun run prod
-# API:  http://localhost:3000   Swagger: http://localhost:3000/api
+# API:  http://localhost:3001   Swagger: http://localhost:3001/api
 ```
 
 Fast local development without the containerized API:
 
 ```bash
 bun install
-bun run dev:infra        # Postgres + Redis only (Docker)
 cp .env.example .env     # defaults match the compose services
+bun run dev:infra        # Postgres + Redis only (Docker)
 bun run dev              # bun watch server on :3000
 bun run db:migrate       # apply latest SQL migration alphabetically
+# API:  http://localhost:3000   Swagger: http://localhost:3000/api
 ```
 
 Then `bun run seed` to create a demo doctor (Sun–Thu 10:00–16:00, 30-min slots) and

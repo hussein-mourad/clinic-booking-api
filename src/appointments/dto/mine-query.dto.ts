@@ -1,13 +1,12 @@
 import { ApiPropertyOptional } from '@nestjs/swagger';
-import { IsBooleanString, IsOptional } from 'class-validator';
+import { IsIn, IsOptional } from 'class-validator';
 
 export class MineQuery {
   @ApiPropertyOptional({
-    example: 'true',
-    description:
-      'Include past/completed appointments (default: only in-progress scheduled ones)',
+    enum: ['scheduled', 'cancelled', 'completed'],
+    description: 'Filter by appointment status (default: scheduled)',
   })
   @IsOptional()
-  @IsBooleanString()
-  includeHistory?: string;
+  @IsIn(['scheduled', 'cancelled', 'completed'])
+  status?: 'scheduled' | 'cancelled' | 'completed';
 }

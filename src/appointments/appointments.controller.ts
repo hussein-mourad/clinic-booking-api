@@ -25,10 +25,10 @@ export class AppointmentsController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: "List the current patient's appointments (scheduled only unless includeHistory requested)" })
+  @ApiOperation({ summary: "List the current patient's appointments, optionally filtered by status (defaults to scheduled)" })
   @ApiResponse({ status: 200, description: 'Array of appointments' })
   mine(@CurrentUser() user: JwtPayload, @Query() query: MineQuery) {
-    return this.appointments.mine(user.sub, query.includeHistory === 'true');
+    return this.appointments.mine(user.sub, query.status);
   }
 
   @Delete(':id')

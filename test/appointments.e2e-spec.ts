@@ -108,7 +108,7 @@ describe('Appointments (e2e)', () => {
     expect(mine.body.map((a: { id: number }) => a.id)).toContain(book.body.id);
   });
 
-  it('hides completed appointments by default and includes them with includeHistory=true', async () => {
+  it('hides completed appointments by default and includes them with status=completed', async () => {
     const { doctor, patient, start } = await makeDoctorAndSlot();
 
     const completed = await request(app.getHttpServer())
@@ -129,7 +129,7 @@ describe('Appointments (e2e)', () => {
     expect(defaultMine.body.map((a: { id: number }) => a.id)).not.toContain(completed.body.id);
 
     const historyMine = await request(app.getHttpServer())
-      .get('/appointments/me?includeHistory=true')
+      .get('/appointments/me?status=completed')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
     expect(historyMine.body.map((a: { id: number }) => a.id)).toContain(completed.body.id);
