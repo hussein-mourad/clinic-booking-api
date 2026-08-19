@@ -50,20 +50,26 @@ POST   /auth/register                          any
 POST   /auth/login                             any
 
 GET    /doctors                                any authenticated
-GET    /doctors/:id/slots?from&to              any authenticated   (availability, on-the-fly)
-GET    /doctors/me/analytics?month=YYYY-MM    doctor             (pure-SQL aggregates, own data only)
-GET    /doctors/me/appointments?from&to       doctor             (own booked appointments + patient name)
-PUT    /doctors/me/schedule                    doctor
+GET    /doctors/:id/slots?from&to              patient, doctor      (availability, on-the-fly)
+GET    /doctors/:id/schedule                   patient, doctor      (view any doctor's schedule)
+GET    /doctors/me                             doctor               (profile + slot duration)
 GET    /doctors/me/schedule                    doctor
+PUT    /doctors/me/schedule                    doctor
+GET    /doctors/me/appointments?from&to        doctor               (own booked appointments + patient name)
+GET    /doctors/me/analytics?month=YYYY-MM     doctor               (pure-SQL aggregates, own data only)
 POST   /doctors/me/blocks                      doctor
-DELETE /doctors/me/blocks/:id                  doctor
-PATCH  /doctors/me                             doctor             (slot duration 15/30/60)
+GET    /doctors/me/blocks                      doctor
+GET    /doctors/me/blocks/:blockId             doctor
+PATCH  /doctors/me/blocks/:blockId             doctor
+DELETE /doctors/me/blocks/:blockId             doctor
+PATCH  /doctors/me                             doctor               (slot duration 15/30/60)
 
 POST   /appointments       { doctorId, startTime }                patient
-GET    /appointments/me                                             patient
+GET    /appointments/me?status=...                                 patient   (defaults to scheduled; omit to see all)
 DELETE /appointments/:id                                            patient   (2h cancel window)
 
 POST   /waitlist           { doctorId, startTime }                patient
+GET    /waitlist/me                                                 patient   (my entries + status)
 POST   /waitlist/:id/accept                                         patient
 DELETE /waitlist/:id                                                patient
 ```

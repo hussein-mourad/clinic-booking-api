@@ -9,7 +9,7 @@ import {
 } from '@nestjs/common';
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
-import { and, eq, lt, sql } from 'drizzle-orm';
+import { and, asc, eq, lt, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../db/database.module';
 import type { Database } from '../db/database.module';
 import { appointments, notifications, users, waitingList } from '../db';
@@ -42,6 +42,25 @@ export class WaitlistService implements OnModuleInit {
       { every: SWEEP_INTERVAL_MS },
       { name: WAITLIST_SWEEP_JOB },
     );
+  }
+
+  async mine(patientId: number) {
+    return this.db
+      .select({
+        id: waitingList.id,
+        doctorId: waitingList.doctorId,
+        doctorName: users.name,
+        slotStart: waitingList.slotStart,
+        position: waitingList.position,
+        status: waitingList.status,
+        offeredAt: waitingList.offeredAt,
+        offerExpiresAt: waitingList.offerExpiresAt,
+        createdAt: waitingList.createdAt,
+      })
+      .from(waitingList)
+      .innerJoin(users, eq(users.id, waitingList.doctorId))
+      .where(eq(waitingList.patientId, patientId))
+      .orderBy(asc(waitingList.slotStart), asc(waitingList.position));
   }
 
   async join(patientId: number, dto: JoinWaitlistDto) {

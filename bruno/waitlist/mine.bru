@@ -1,0 +1,25 @@
+meta {
+  name: My waiting list
+  type: http
+  seq: 5
+}
+
+get {
+  url: {{baseUrl}}/waitlist/me
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Lists the current patient's waiting-list entries (patient role only) with
+  their current status (waiting / offered / accepted / expired / declined),
+  queue position, slot start, doctor, and any offer-expiry timestamp.
+}

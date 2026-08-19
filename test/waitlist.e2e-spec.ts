@@ -1,7 +1,7 @@
 import { INestApplication } from '@nestjs/common';
 import { getQueueToken } from '@nestjs/bullmq';
 import { Pool } from 'pg';
-import { eq } from 'drizzle-orm';
+import { and, eq } from 'drizzle-orm';
 import request from 'supertest';
 import { Queue } from 'bullmq';
 import { createApp } from '../src/app.factory';
@@ -159,11 +159,23 @@ describe('Waiting list (e2e)', () => {
     // C stays waiting while B's offer is live.
     expect((await entry(entryCId))!.status).toBe('waiting');
 
-    const bNotif = await db
-      .select()
-      .from(notifications)
-      .where(eq(notifications.userId, patientB.user.id));
-    expect(bNotif.some((n) => n.type === 'waitlist_offer')).toBe(true);
+    const bOffered = await waitFor(
+      async () => {
+        const rows = await db
+          .select()
+          .from(notifications)
+          .where(
+            and(
+              eq(notifications.userId, patientB.user.id),
+              eq(notifications.type, 'waitlist_offer'),
+            ),
+          );
+        return rows.length > 0;
+      },
+      (found) => found === true,
+      'B offer notification to be written',
+    );
+    expect(bOffered).toBe(true);
 
     // B accepts: the guarded INSERT creates a real appointment for B.
     const accept = await request(app.getHttpServer())
@@ -294,5 +306,74 @@ describe('Waiting list (e2e)', () => {
       .delete(`/waitlist/${join.body.id}`)
       .set('Authorization', `Bearer ${other.token}`)
       .expect(404);
+  }, 30_000);
+
+  it('lists the patient\'s own waiting-list entries with status and doctor name', async () => {
+    const doctor = await registerUser(app, 'doctor');
+    const patient = await registerUser(app, 'patient');
+    const other = await registerUser(app, 'patient');
+    await track(doctor.user);
+    await track(patient.user);
+    await track(other.user);
+
+    const { slot } = await setupDoctorSchedule(doctor.token);
+
+    // Take the slot so both patients can join the waiting list.
+    const booked = await request(app.getHttpServer())
+      .post('/appointments')
+      .set('Authorization', `Bearer ${other.token}`)
+      .send({ doctorId: doctor.user.id, startTime: slot })
+      .expect(201);
+    const appointmentId = booked.body.id as number;
+
+    const join = await request(app.getHttpServer())
+      .post('/waitlist')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .send({ doctorId: doctor.user.id, startTime: slot })
+      .expect(201);
+
+    const [doctorRow] = await db
+      .select({ name: users.name })
+      .from(users)
+      .where(eq(users.id, doctor.user.id));
+
+    const res = await request(app.getHttpServer())
+      .get('/waitlist/me')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({
+      id: join.body.id,
+      doctorId: doctor.user.id,
+      doctorName: doctorRow!.name,
+      slotStart: slot,
+      position: 1,
+      status: 'waiting',
+    });
+    expect(res.body[0].offerExpiresAt).toBeNull();
+
+    // Another patient's entries are not visible.
+    const otherRes = await request(app.getHttpServer())
+      .get('/waitlist/me')
+      .set('Authorization', `Bearer ${other.token}`)
+      .expect(200);
+    expect(otherRes.body).toHaveLength(0);
+
+    // Cleanup reflects acceptance: after cancelling, the offer appears.
+    await request(app.getHttpServer())
+      .delete(`/appointments/${appointmentId}`)
+      .set('Authorization', `Bearer ${other.token}`)
+      .expect(200);
+    await waitFor(
+      () => entry(join.body.id),
+      (r) => r !== undefined && r.status === 'offered',
+      'entry to become offered',
+    );
+    const after = await request(app.getHttpServer())
+      .get('/waitlist/me')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+    expect(after.body[0].status).toBe('offered');
+    expect(after.body[0].offerExpiresAt).not.toBeNull();
   }, 30_000);
 });
