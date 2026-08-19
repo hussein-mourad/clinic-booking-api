@@ -1,0 +1,20 @@
+meta {
+  name: Get a blocked date
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/doctors/me/blocks/{{blockId}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Returns a single blocked date/time range for the current doctor (doctor role only).
+  404 when the block does not exist or belongs to another doctor.
+}

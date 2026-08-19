@@ -10,6 +10,7 @@ import type { Database } from '../database/database.module';
 import { appointments, blockedSlots, schedules, users } from '../database/schema';
 import { generateSlots } from './slots.generator';
 import { CreateBlockDto } from './dto/create-block.dto';
+import { UpdateBlockDto } from './dto/update-block.dto';
 import { ScheduleEntryDto } from './dto/schedule-entry.dto';
 
 export const SLOT_DURATION_OPTIONS = [15, 30, 60] as const;
@@ -79,6 +80,31 @@ export class DoctorsService {
     }));
   }
 
+  async getScheduleForDoctor(doctorId: number) {
+    const [doctor] = await this.db
+      .select({ id: users.id })
+      .from(users)
+      .where(and(eq(users.id, doctorId), eq(users.role, 'doctor')))
+      .limit(1);
+    if (!doctor) throw new NotFoundException('Doctor not found');
+    return this.getSchedule(doctorId);
+  }
+
+  async getProfile(doctorId: number) {
+    const [row] = await this.db
+      .select({
+        id: users.id,
+        name: users.name,
+        email: users.email,
+        slotDurationMin: users.slotDurationMin,
+      })
+      .from(users)
+      .where(and(eq(users.id, doctorId), eq(users.role, 'doctor')))
+      .limit(1);
+    if (!row) throw new NotFoundException('Doctor not found');
+    return row;
+  }
+
   async addBlock(doctorId: number, dto: CreateBlockDto) {
     const hasStart = dto.startTime !== undefined;
     const hasEnd = dto.endTime !== undefined;
@@ -112,6 +138,62 @@ export class DoctorsService {
     if (result.rowCount === 0) {
       throw new NotFoundException('Block not found');
     }
+  }
+
+  async listBlocks(doctorId: number) {
+    const rows = await this.db
+      .select()
+      .from(blockedSlots)
+      .where(eq(blockedSlots.doctorId, doctorId))
+      .orderBy(blockedSlots.blockDate, blockedSlots.startTime);
+    return rows.map((row) => ({
+      ...row,
+      startTime: toHHMM(row.startTime),
+      endTime: toHHMM(row.endTime),
+    }));
+  }
+
+  async getBlock(doctorId: number, blockId: number) {
+    const [row] = await this.db
+      .select()
+      .from(blockedSlots)
+      .where(and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)))
+      .limit(1);
+    if (!row) throw new NotFoundException('Block not found');
+    return {
+      ...row,
+      startTime: toHHMM(row.startTime),
+      endTime: toHHMM(row.endTime),
+    };
+  }
+
+  async updateBlock(doctorId: number, blockId: number, dto: UpdateBlockDto) {
+    const hasStart = dto.startTime !== undefined;
+    const hasEnd = dto.endTime !== undefined;
+    if (hasStart !== hasEnd) {
+      throw new BadRequestException('Provide both startTime and endTime, or neither for a full-day block');
+    }
+    if (hasStart && dto.startTime! >= dto.endTime!) {
+      throw new BadRequestException('startTime must be before endTime');
+    }
+
+    const result = await this.db
+      .update(blockedSlots)
+      .set({
+        ...(dto.blockDate !== undefined ? { blockDate: dto.blockDate } : {}),
+        ...(dto.startTime !== undefined ? { startTime: dto.startTime } : {}),
+        ...(dto.endTime !== undefined ? { endTime: dto.endTime } : {}),
+      })
+      .where(and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)))
+      .returning();
+    if (result.length === 0) {
+      throw new NotFoundException('Block not found');
+    }
+    return {
+      ...result[0],
+      startTime: toHHMM(result[0].startTime),
+      endTime: toHHMM(result[0].endTime),
+    };
   }
 
   async setSlotDuration(doctorId: number, slotDurationMin: number) {

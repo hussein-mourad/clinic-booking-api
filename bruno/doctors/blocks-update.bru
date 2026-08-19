@@ -1,0 +1,32 @@
+meta {
+  name: Update a blocked date
+  type: http
+  seq: 8
+}
+
+patch {
+  url: {{baseUrl}}/doctors/me/blocks/{{blockId}}
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "blockDate": "2026-08-26",
+    "startTime": "09:00",
+    "endTime": "10:00"
+  }
+}
+
+docs {
+  Updates a blocked date and/or time range for the current doctor (doctor role only).
+  All fields are optional; provide both startTime and endTime together, or neither for a full-day block.
+}

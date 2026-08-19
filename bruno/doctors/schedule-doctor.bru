@@ -1,0 +1,20 @@
+meta {
+  name: View doctor schedule
+  type: http
+  seq: 13
+}
+
+get {
+  url: {{baseUrl}}/doctors/{{doctorId}}/schedule
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Returns the weekly schedule of any doctor (patient or doctor role).
+  404 when the id is not a doctor.
+}

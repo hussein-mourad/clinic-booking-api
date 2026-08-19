@@ -1,0 +1,19 @@
+meta {
+  name: Get own profile
+  type: http
+  seq: 12
+}
+
+get {
+  url: {{baseUrl}}/doctors/me
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Returns the current doctor profile (name, email) and slot duration (doctor role only).
+}

@@ -159,8 +159,7 @@ describe('Doctors (e2e)', () => {
       .expect(404);
   });
 
-  it('manages only its own schedule and keeps doctors isolated', async () => {
-    const patient = await registerUser(app, 'patient', 'Patient');
+  it('manages only its own schedule and keeps doctors isolated', async () => {    const patient = await registerUser(app, 'patient', 'Patient');
     const doctorA = await registerUser(app, 'doctor', 'Dr A');
     const doctorB = await registerUser(app, 'doctor', 'Dr B');
     emails.push(
@@ -193,5 +192,126 @@ describe('Doctors (e2e)', () => {
       .expect(200);
     expect(b.body).toHaveLength(1);
     expect(b.body[0]).toMatchObject({ dayOfWeek: 1 });
+  });
+
+  it('returns own profile with slot duration', async () => {
+    const { token, user } = await registerUser(app, 'doctor', 'Dr Profile');
+    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+
+    const res = await request(app.getHttpServer())
+      .get('/doctors/me')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(res.body).toMatchObject({ id: user.id, slotDurationMin: 15 });
+    expect(res.body.email).toBeTruthy();
+  });
+
+  it('lists, reads and updates blocked slots', async () => {
+    const { token, user } = await registerUser(app, 'doctor', 'Dr Blocks CRUD');
+    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+
+    const created = await request(app.getHttpServer())
+      .post('/doctors/me/blocks')
+      .set('Authorization', `Bearer ${token}`)
+      .send({ blockDate: '2026-08-25', startTime: '12:00', endTime: '14:00' })
+      .expect(201);
+
+    const list = await request(app.getHttpServer())
+      .get('/doctors/me/blocks')
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(list.body.map((b: { id: number }) => b.id)).toContain(created.body.id);
+
+    const single = await request(app.getHttpServer())
+      .get(`/doctors/me/blocks/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+    expect(single.body).toMatchObject({ blockDate: '2026-08-25', startTime: '12:00', endTime: '14:00' });
+
+    const updated = await request(app.getHttpServer())
+      .patch(`/doctors/me/blocks/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ blockDate: '2026-08-26', startTime: '09:00', endTime: '10:00' })
+      .expect(200);
+    expect(updated.body).toMatchObject({ blockDate: '2026-08-26', startTime: '09:00', endTime: '10:00' });
+
+    await request(app.getHttpServer())
+      .patch(`/doctors/me/blocks/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .send({ startTime: '10:00' })
+      .expect(400);
+
+    await request(app.getHttpServer())
+      .get(`/doctors/me/blocks/${created.body.id}`)
+      .set('Authorization', `Bearer ${token}`)
+      .expect(200);
+  });
+
+  it('does not leak another doctor blocks and returns 404 on foreign or unknown blocks', async () => {
+    const doctorA = await registerUser(app, 'doctor', 'Dr Blocks A');
+    const doctorB = await registerUser(app, 'doctor', 'Dr Blocks B');
+    emails.push(
+      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctorA.user.id)))[0]!.email,
+      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctorB.user.id)))[0]!.email,
+    );
+
+    const aBlock = await request(app.getHttpServer())
+      .post('/doctors/me/blocks')
+      .set('Authorization', `Bearer ${doctorA.token}`)
+      .send({ blockDate: '2026-08-25' })
+      .expect(201);
+
+    await request(app.getHttpServer())
+      .get(`/doctors/me/blocks/${aBlock.body.id}`)
+      .set('Authorization', `Bearer ${doctorB.token}`)
+      .expect(404);
+
+    await request(app.getHttpServer())
+      .patch(`/doctors/me/blocks/${aBlock.body.id}`)
+      .set('Authorization', `Bearer ${doctorB.token}`)
+      .send({ blockDate: '2026-08-27' })
+      .expect(404);
+
+    const listB = await request(app.getHttpServer())
+      .get('/doctors/me/blocks')
+      .set('Authorization', `Bearer ${doctorB.token}`)
+      .expect(200);
+    expect(listB.body).toHaveLength(0);
+
+    await request(app.getHttpServer())
+      .get('/doctors/me/blocks/999999')
+      .set('Authorization', `Bearer ${doctorB.token}`)
+      .expect(404);
+  });
+
+  it('exposes a doctor weekly schedule to any authenticated user', async () => {
+    const doctor = await registerUser(app, 'doctor', 'Dr Public Schedule');
+    const patient = await registerUser(app, 'patient', 'Patient Schedule Viewer');
+    emails.push(
+      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
+      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
+    );
+
+    await request(app.getHttpServer())
+      .put('/doctors/me/schedule')
+      .set('Authorization', `Bearer ${doctor.token}`)
+      .send({ entries: [{ dayOfWeek: 2, startTime: '09:00', endTime: '13:00' }] })
+      .expect(200);
+
+    const res = await request(app.getHttpServer())
+      .get(`/doctors/${doctor.user.id}/schedule`)
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({ dayOfWeek: 2, startTime: '09:00', endTime: '13:00' });
+
+    await request(app.getHttpServer())
+      .get(`/doctors/${doctor.user.id}/schedule`)
+      .expect(401);
+
+    await request(app.getHttpServer())
+      .get('/doctors/999999/schedule')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(404);
   });
 });

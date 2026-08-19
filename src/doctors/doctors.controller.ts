@@ -21,6 +21,7 @@ import { AnalyticsQuery } from './dto/analytics-query.dto';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { ListSlotsQuery } from './dto/list-slots-query.dto';
 import { SetSlotDurationDto } from './dto/set-slot-duration.dto';
+import { UpdateBlockDto } from './dto/update-block.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 
 @ApiTags('doctors')
@@ -53,6 +54,22 @@ export class DoctorsController {
     return this.doctors.getSchedule(user.sub);
   }
 
+  @Get(':id/schedule')
+  @Roles('patient', 'doctor')
+  @ApiOperation({ summary: 'View any doctor weekly schedule' })
+  @ApiResponse({ status: 200, description: 'Weekly schedule of the doctor' })
+  @ApiResponse({ status: 404, description: 'Doctor not found' })
+  doctorSchedule(@Param('id', ParseIntPipe) id: number) {
+    return this.doctors.getScheduleForDoctor(id);
+  }
+
+  @Get('me')
+  @ApiOperation({ summary: "Get the current doctor's profile and slot duration" })
+  @ApiResponse({ status: 200, description: 'Doctor profile' })
+  getProfile(@CurrentUser() user: JwtPayload) {
+    return this.doctors.getProfile(user.sub);
+  }
+
   @Get(':id/analytics')
   @ApiOperation({ summary: 'Monthly analytics for a doctor (pure SQL aggregation)' })
   @ApiResponse({ status: 200, description: 'Monthly metrics' })
@@ -75,6 +92,34 @@ export class DoctorsController {
   @ApiResponse({ status: 201, description: 'Block created' })
   addBlock(@Body() dto: CreateBlockDto, @CurrentUser() user: JwtPayload) {
     return this.doctors.addBlock(user.sub, dto);
+  }
+
+  @Get('me/blocks')
+  @ApiOperation({ summary: 'List blocked dates/time ranges for the current doctor' })
+  @ApiResponse({ status: 200, description: 'Array of blocked slots' })
+  listBlocks(@CurrentUser() user: JwtPayload) {
+    return this.doctors.listBlocks(user.sub);
+  }
+
+  @Get('me/blocks/:blockId')
+  @ApiOperation({ summary: 'Get a single blocked date/time range' })
+  @ApiResponse({ status: 200, description: 'Blocked slot' })
+  @ApiResponse({ status: 404, description: 'Block not found' })
+  getBlock(@Param('blockId', ParseIntPipe) blockId: number, @CurrentUser() user: JwtPayload) {
+    return this.doctors.getBlock(user.sub, blockId);
+  }
+
+  @Patch('me/blocks/:blockId')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Update a blocked date and/or time range' })
+  @ApiResponse({ status: 200, description: 'Block updated' })
+  @ApiResponse({ status: 404, description: 'Block not found' })
+  updateBlock(
+    @Param('blockId', ParseIntPipe) blockId: number,
+    @Body() dto: UpdateBlockDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
+    return this.doctors.updateBlock(user.sub, blockId, dto);
   }
 
   @Delete('me/blocks/:blockId')

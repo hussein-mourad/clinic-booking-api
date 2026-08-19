@@ -1,0 +1,19 @@
+meta {
+  name: List blocked dates
+  type: http
+  seq: 6
+}
+
+get {
+  url: {{baseUrl}}/doctors/me/blocks
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Lists all blocked dates/time ranges for the current doctor (doctor role only), ordered by date.
+}
