@@ -225,6 +225,9 @@ bun run prod:up && bun run proof:lb  # two replicas behind nginx: traffic spread
   are pulled into JS.
 - **Schema migrations only** (`drizzle/`, applied by a script on boot). No `synchronize`.
 
+> See [`docs/architecture.md`](docs/architecture.md) for Mermaid diagrams of the slot
+> availability, booking/concurrency guard, analytics, waiting-list, and reminder flows.
+
 ---
 
 ## Future work
