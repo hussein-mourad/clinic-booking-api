@@ -21,7 +21,8 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/database/migrate.ts",
-    "seed": "tsx scripts/seed.ts"
+    "seed": "tsx scripts/seed.ts",
+    "seed:full": "tsx scripts/seed-full.ts"
   },
   "jest": {
     "moduleFileExtensions": [
