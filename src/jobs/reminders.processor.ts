@@ -5,6 +5,7 @@ import { and, eq, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../db/database.module';
 import type { Database } from '../db/database.module';
 import { appointments, notifications } from '../db';
+import { logJobRun } from './job-run.helper';
 import { REMINDER_JOB, REMINDERS_QUEUE, ReminderJobData } from './reminders.constants';
 
 /**
@@ -25,6 +26,7 @@ export class RemindersProcessor extends WorkerHost {
 
   async process(job: Job<ReminderJobData>): Promise<void> {
     if (job.name !== REMINDER_JOB) return;
+    logJobRun(this.logger, REMINDERS_QUEUE, job, 'start', { appointmentId: job.data.appointmentId });
 
     const [appointment] = await this.db
       .select({ id: appointments.id, patientId: appointments.patientId, status: appointments.status })
@@ -33,7 +35,10 @@ export class RemindersProcessor extends WorkerHost {
       .limit(1);
 
     if (!appointment || appointment.status !== 'scheduled') {
-      this.logger.log(`reminder ${job.id}: appointment not active, skipped`);
+      logJobRun(this.logger, REMINDERS_QUEUE, job, 'skipped (no active appointment)', {
+        appointmentId: job.data.appointmentId,
+        status: appointment?.status,
+      });
       return;
     }
 
@@ -48,7 +53,9 @@ export class RemindersProcessor extends WorkerHost {
       )
       .limit(1);
     if (existing) {
-      this.logger.log(`reminder ${job.id}: notification #${existing.id} already exists, skipped`);
+      logJobRun(this.logger, REMINDERS_QUEUE, job, 'skipped (reminder already sent)', {
+        notificationId: existing.id,
+      });
       return;
     }
 
@@ -66,6 +73,10 @@ export class RemindersProcessor extends WorkerHost {
       })
       .returning({ id: notifications.id });
 
-    this.logger.log(`reminder ${job.id}: notification #${row?.id} written`);
+    logJobRun(this.logger, REMINDERS_QUEUE, job, 'sent', {
+      notificationId: row?.id,
+      appointmentId: appointment.id,
+      patientId: appointment.patientId,
+    });
   }
 }

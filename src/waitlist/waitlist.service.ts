@@ -205,12 +205,13 @@ export class WaitlistService implements OnModuleInit {
     return patientId;
   }
 
-  /** Expire stale offers, then recurse to the next FIFO candidate per slot. */
-  async sweep() {
+  /** Expire stale offers, then recurse to the next FIFO candidate per slot. @returns expired count. */
+  async sweep(): Promise<number> {
     const expired = await this.db
       .select()
       .from(waitingList)
       .where(and(eq(waitingList.status, 'offered'), lt(waitingList.offerExpiresAt, new Date())));
+    let expiredCount = 0;
     for (const row of expired) {
       const [updated] = await this.db
         .update(waitingList)
@@ -218,8 +219,14 @@ export class WaitlistService implements OnModuleInit {
         .where(and(eq(waitingList.id, row.id), eq(waitingList.status, 'offered')))
         .returning({ id: waitingList.id });
       if (updated) {
+        expiredCount += 1;
+        this.logger.log(`sweep: expired offer #${updated.id} for slot ${row.slotStart.toISOString()}`);
         await this.claimNext(row.doctorId, new Date(row.slotStart));
       }
     }
+    if (expired.length > 0) {
+      this.logger.log(`sweep: ${expiredCount}/${expired.length} offers expired, next candidates claimed`);
+    }
+    return expiredCount;
   }
 }
