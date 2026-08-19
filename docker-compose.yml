@@ -8,11 +8,11 @@ services:
       POSTGRES_PASSWORD: clinic
       POSTGRES_DB: clinic
     ports:
-      - '${POSTGRES_HOST_PORT:-5432}:5432'
+      - "${POSTGRES_HOST_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
-      test: ['CMD-SHELL', 'pg_isready -U clinic -d clinic']
+      test: ["CMD-SHELL", "pg_isready -U clinic -d clinic"]
       interval: 5s
       timeout: 5s
       retries: 10
@@ -20,34 +20,23 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - '${REDIS_HOST_PORT:-6379}:6379'
+      - "${REDIS_HOST_PORT:-6379}:6379"
     healthcheck:
-      test: ['CMD', 'redis-cli', 'ping']
+      test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
 
-  api:
-    # Full-stack mode: `docker compose up` boots everything with one command.
-    # For fast local development, use `bun run dev:infra` (db + redis only)
-    # and run the app with `bun run start:dev` (hot reload on your machine).
-    build: .
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgres://clinic:clinic@db:5432/clinic
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-dev-only-secret-change-me}
-      JWT_EXPIRES_IN: 1d
+  redis-insight:
+    image: redislabs/redisinsight:2.66
+    container_name: redis-insight
     ports:
-      - '3000:3000'
-    command: ['sh', '-c', 'bun dist/database/migrate.js && bun run start:prod']
+      - "8001:5540"
+    environment:
+      REDIS_PORT: 6379
+      REDIS_HOST: redis
+    depends_on:
+      - redis
 
 volumes:
   pgdata:

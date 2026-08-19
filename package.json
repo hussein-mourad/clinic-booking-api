@@ -8,7 +8,6 @@
     "build": "nest build",
     "start": "nest start",
     "dev": "bun --watch src/main.ts",
-    "dev:infra": "docker compose up -d db redis",
     "start:prod": "bun dist/main.js",
     "lint": "eslint \"src/**/*.ts\" \"test/**/*.ts\"",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
