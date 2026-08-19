@@ -108,6 +108,33 @@ describe('Appointments (e2e)', () => {
     expect(mine.body.map((a: { id: number }) => a.id)).toContain(book.body.id);
   });
 
+  it('hides completed appointments by default and includes them with includeHistory=true', async () => {
+    const { doctor, patient, start } = await makeDoctorAndSlot();
+
+    const completed = await request(app.getHttpServer())
+      .post('/appointments')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .send({ doctorId: doctor.user.id, startTime: start })
+      .expect(201);
+
+    await db
+      .update(appointments)
+      .set({ status: 'completed' })
+      .where(eq(appointments.id, completed.body.id));
+
+    const defaultMine = await request(app.getHttpServer())
+      .get('/appointments/me')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+    expect(defaultMine.body.map((a: { id: number }) => a.id)).not.toContain(completed.body.id);
+
+    const historyMine = await request(app.getHttpServer())
+      .get('/appointments/me?includeHistory=true')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+    expect(historyMine.body.map((a: { id: number }) => a.id)).toContain(completed.body.id);
+  });
+
   it('rejects a second booking for the same slot with 409', async () => {
     const { doctor, patient, other, start } = await makeDoctorAndSlot();
 

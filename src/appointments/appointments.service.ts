@@ -109,11 +109,16 @@ export class AppointmentsService {
     }
   }
 
-  async mine(patientId: number) {
+  async mine(patientId: number, includeHistory?: boolean) {
     return this.db
       .select()
       .from(appointments)
-      .where(eq(appointments.patientId, patientId))
+      .where(
+        and(
+          eq(appointments.patientId, patientId),
+          includeHistory ? undefined : eq(appointments.status, 'scheduled'),
+        ),
+      )
       .orderBy(asc(appointments.startTime));
   }
 

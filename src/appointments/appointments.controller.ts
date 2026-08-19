@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload';
 import { Roles } from '../auth/roles.decorator';
 import { AppointmentsService } from './appointments.service';
 import { BookDto } from './dto/book.dto';
+import { MineQuery } from './dto/mine-query.dto';
 
 @ApiTags('appointments')
 @ApiBearerAuth()
@@ -24,10 +25,10 @@ export class AppointmentsController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: "List the current patient's appointments" })
+  @ApiOperation({ summary: "List the current patient's appointments (scheduled only unless includeHistory requested)" })
   @ApiResponse({ status: 200, description: 'Array of appointments' })
-  mine(@CurrentUser() user: JwtPayload) {
-    return this.appointments.mine(user.sub);
+  mine(@CurrentUser() user: JwtPayload, @Query() query: MineQuery) {
+    return this.appointments.mine(user.sub, query.includeHistory === 'true');
   }
 
   @Delete(':id')
