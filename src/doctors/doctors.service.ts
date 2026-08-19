@@ -4,7 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, gte, lte, sql } from 'drizzle-orm';
+import { and, asc, eq, gte, lte, sql } from 'drizzle-orm';
 import { DRIZZLE } from '../database/database.module';
 import type { Database } from '../database/database.module';
 import { appointments, blockedSlots, schedules, users } from '../database/schema';
@@ -103,6 +103,24 @@ export class DoctorsService {
       .limit(1);
     if (!row) throw new NotFoundException('Doctor not found');
     return row;
+  }
+
+  async listAppointments(doctorId: number) {
+    return this.db
+      .select({
+        id: appointments.id,
+        patientId: appointments.patientId,
+        patientName: users.name,
+        startTime: appointments.startTime,
+        endTime: appointments.endTime,
+        status: appointments.status,
+        createdAt: appointments.createdAt,
+        cancelledAt: appointments.cancelledAt,
+      })
+      .from(appointments)
+      .innerJoin(users, eq(users.id, appointments.patientId))
+      .where(eq(appointments.doctorId, doctorId))
+      .orderBy(asc(appointments.startTime));
   }
 
   async addBlock(doctorId: number, dto: CreateBlockDto) {

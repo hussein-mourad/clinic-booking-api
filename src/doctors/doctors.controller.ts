@@ -70,6 +70,13 @@ export class DoctorsController {
     return this.doctors.getProfile(user.sub);
   }
 
+  @Get('me/appointments')
+  @ApiOperation({ summary: "List the current doctor's booked appointments" })
+  @ApiResponse({ status: 200, description: 'Array of appointments with the patient name' })
+  appointments(@CurrentUser() user: JwtPayload) {
+    return this.doctors.listAppointments(user.sub);
+  }
+
   @Get('me/analytics')
   @ApiOperation({ summary: 'Monthly analytics for the current doctor (pure SQL aggregation)' })
   @ApiResponse({ status: 200, description: 'Monthly metrics' })

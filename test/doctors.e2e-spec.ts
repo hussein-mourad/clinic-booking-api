@@ -5,7 +5,7 @@ import request from 'supertest';
 import { createApp } from '../src/app.factory';
 import { DRIZZLE, DATABASE_POOL } from '../src/database/database.module';
 import type { Database } from '../src/database/database.module';
-import { users } from '../src/database/schema';
+import { users, appointments, notifications } from '../src/database/schema';
 
 async function registerUser(app: INestApplication, role: 'patient' | 'doctor', name: string) {
   const email = `${role}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
@@ -29,7 +29,17 @@ describe('Doctors (e2e)', () => {
 
   afterAll(async () => {
     for (const email of emails) {
-      await db.delete(users).where(eq(users.email, email));
+      const [user] = await db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, email))
+        .limit(1);
+      if (user) {
+        await db.delete(notifications).where(eq(notifications.userId, user.id));
+        await db.delete(appointments).where(eq(appointments.doctorId, user.id));
+        await db.delete(appointments).where(eq(appointments.patientId, user.id));
+        await db.delete(users).where(eq(users.id, user.id));
+      }
     }
     await (app.get(DATABASE_POOL) as Pool).end();
     await app.close();
@@ -313,5 +323,51 @@ describe('Doctors (e2e)', () => {
       .get('/doctors/999999/schedule')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(404);
+  });
+
+  it('lets a doctor list their own booked appointments with patient names', async () => {
+    const doctor = await registerUser(app, 'doctor', 'Dr My Appointments');
+    const patient = await registerUser(app, 'patient', 'Patient Booker');
+    emails.push(
+      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
+      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
+    );
+
+    const tomorrow = new Date(Date.now() + 86_400_000);
+    const day = tomorrow.toISOString().slice(0, 10);
+    const weekday = tomorrow.getUTCDay();
+
+    await request(app.getHttpServer())
+      .put('/doctors/me/schedule')
+      .set('Authorization', `Bearer ${doctor.token}`)
+      .send({ entries: [{ dayOfWeek: weekday, startTime: '10:00', endTime: '12:00' }] })
+      .expect(200);
+
+    const booked = await request(app.getHttpServer())
+      .post('/appointments')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .send({ doctorId: doctor.user.id, startTime: `${day}T10:00:00.000Z` })
+      .expect(201);
+
+    const res = await request(app.getHttpServer())
+      .get('/doctors/me/appointments')
+      .set('Authorization', `Bearer ${doctor.token}`)
+      .expect(200);
+
+    expect(Array.isArray(res.body)).toBe(true);
+    expect(res.body).toHaveLength(1);
+    expect(res.body[0]).toMatchObject({
+      id: booked.body.id,
+      patientId: patient.user.id,
+      patientName: 'Patient Booker',
+      status: 'scheduled',
+    });
+
+    await request(app.getHttpServer())
+      .get('/doctors/me/appointments')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(403);
+
+    await db.delete(appointments).where(eq(appointments.id, booked.body.id));
   });
 });

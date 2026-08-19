@@ -51,6 +51,7 @@ POST   /auth/login                             any
 GET    /doctors                                any authenticated
 GET    /doctors/:id/slots?from&to              any authenticated   (availability, on-the-fly)
 GET    /doctors/me/analytics?month=YYYY-MM    doctor             (pure-SQL aggregates, own data only)
+GET    /doctors/me/appointments               doctor             (own booked appointments + patient name)
 PUT    /doctors/me/schedule                    doctor
 GET    /doctors/me/schedule                    doctor
 POST   /doctors/me/blocks                      doctor
