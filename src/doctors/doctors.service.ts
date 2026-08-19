@@ -301,21 +301,29 @@ export class DoctorsService {
       peak_booking_hours: number | null;
       avg_utilization: number;
     }>(sql`
+      -- CTE 1: Aggregate real appointment for the requested month
       WITH booked AS (
         SELECT
+          -- Total appointment count
           count(*)::numeric AS total,
+          -- Count of cancelled appointments via inline FILTER
           count(*) FILTER (WHERE appointments.status = 'cancelled')::numeric AS cancelled,
+          -- Total booked duration in minutes
           coalesce(sum(extract(epoch FROM (appointments.end_time - appointments.start_time)) / 60), 0) AS booked_minutes,
+          -- Most frequent appointment start hour (UTC)
           mode() WITHIN GROUP (ORDER BY extract(hour FROM appointments.start_time AT TIME ZONE 'UTC')) AS peak_hour
         FROM appointments
         WHERE appointments.doctor_id = ${doctorId}
           AND appointments.start_time >= ${monthStart}
           AND appointments.start_time < ${monthEnd}
       ),
+      -- CTE 2: Calculate total available working minutes (schedule minus blocks)
       scheduled AS (
         SELECT coalesce(sum(
+            -- Full shift duration in minutes
             extract(epoch FROM (schedules.end_time - schedules.start_time)) / 60
             - (
+              -- Subtract overlapping blocked minutes (vacations, partial day blocks)
               SELECT coalesce(sum(extract(epoch FROM
                   least(schedules.end_time, coalesce(blocks.end_time, schedules.end_time))
                   - greatest(schedules.start_time, coalesce(blocks.start_time, schedules.start_time))) / 60), 0)
@@ -327,14 +335,17 @@ export class DoctorsService {
             )
         ), 0) AS available_minutes
         FROM schedules
+        -- Expand weekly schedule rules into concrete calendar days for the month
         CROSS JOIN LATERAL (
           SELECT (generate_series(${monthStart}::timestamptz,
                                   ${monthEnd}::timestamptz - interval '1 day',
                                   interval '1 day'))::date AS day
         ) days
         WHERE schedules.doctor_id = ${doctorId}
+        -- dow: day of the week, filters the schedule day
           AND extract(dow FROM days.day) = schedules.day_of_week
       )
+      -- Final SELECT: Combine 1-row CTEs, compute rates/utilization with zero-guards
       SELECT
         booked.total::int AS total_appointments,
         CASE WHEN booked.total > 0
