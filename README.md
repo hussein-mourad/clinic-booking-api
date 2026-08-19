@@ -65,7 +65,7 @@ DELETE /doctors/me/blocks/:blockId             doctor
 PATCH  /doctors/me                             doctor               (slot duration 15/30/60)
 
 POST   /appointments       { doctorId, startTime }                patient
-GET    /appointments/me?status=...                                 patient   (defaults to scheduled; omit to see all)
+GET    /appointments/me?status=...                                 patient   (status filter; defaults to scheduled)
 DELETE /appointments/:id                                            patient   (2h cancel window)
 
 POST   /waitlist           { doctorId, startTime }                patient
@@ -248,12 +248,4 @@ bun run prod:up && bun run proof:lb  # two replicas behind nginx: traffic spread
 
 ## AI usage
 
-This project is a coding assessment whose AI-usage rules are stated in
-`docs/Backend-Developer-Technical-Task.md`. AI assistants (used as pair-programmer tooling)
-were used throughout implementation. Records of what was delegated and produced:
-
-- AI suggested the baseline NestJS + BullMQ + Drizzle architecture and the raw-SQL analytics/generate_series approach; the human reviewed and committed these into `docs/PLAN.md`.
-- The Drizzle schema, migrations, and API surface were produced with AI assistance and reviewed commit-by-commit.
-- Concurrency-safety design (partial unique index + `ON CONFLICT DO NOTHING`) was validated by AI and proven by automated tests — never by assertion alone.
-- All decisions that affect correctness (FKs, indexes, the 2h cancel window, FIFO waitlist, 15-min offer expiry) are documented above so a human can audit them.
-- Final responsibility for correctness, security, and the deliverables rests with the author (per the task's AI rules); the commit history shows each milestone landing as focused, reviewable changes.
+I used OpenCode throughout my development workflow, from planning and implementation to code review, testing, and documentation. I used it to break down tasks, explore different solutions, write and improve code, find bugs, and create tests and documentation. It helped me work faster while still keeping me involved in the decisions and making sure I understood the code I am using.
