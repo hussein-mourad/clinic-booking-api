@@ -230,7 +230,7 @@ flowchart TD
 
 - `total_appointments` = appointments whose slot falls in the month.
 - `cancellation_rate` = `cancelled / total` (0 when none).
-- `peak_booking_hours` = `mode() OVER extract(hour FROM created_at)`.
+- `peak_booking_hours` = `mode() OVER extract(hour FROM start_time)`.
 - `avg_utilization` = `booked_minutes / (scheduled_minutes − blocks)`.
 
 All aggregation happens in Postgres; JavaScript only formats the returned row.

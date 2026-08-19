@@ -21,7 +21,7 @@ const MAX_SLOT_RANGE_DAYS = 90;
 
 @Injectable()
 export class DoctorsService {
-  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
+  constructor(@Inject(DRIZZLE) private readonly db: Database) { }
 
   async listDoctors() {
     return this.db
@@ -280,7 +280,7 @@ export class DoctorsService {
    * pulled into JS). All values are derived in one query:
    *  - total_appointments: appointments whose slot falls in the month
    *  - cancellation_rate: cancelled / total
-   *  - peak_booking_hours: mode() of the UTC booking hour (created_at)
+   *  - peak_booking_hours: mode() of the UTC appointment start hour (start_time)
    *  - avg_utilization: sum(booked minutes) / sum(scheduled minutes minus blocks)
    */
   async getAnalytics(doctorId: number, month: string) {
@@ -306,7 +306,7 @@ export class DoctorsService {
           count(*)::numeric AS total,
           count(*) FILTER (WHERE appointments.status = 'cancelled')::numeric AS cancelled,
           coalesce(sum(extract(epoch FROM (appointments.end_time - appointments.start_time)) / 60), 0) AS booked_minutes,
-          mode() WITHIN GROUP (ORDER BY extract(hour FROM appointments.created_at AT TIME ZONE 'UTC')) AS peak_hour
+          mode() WITHIN GROUP (ORDER BY extract(hour FROM appointments.start_time AT TIME ZONE 'UTC')) AS peak_hour
         FROM appointments
         WHERE appointments.doctor_id = ${doctorId}
           AND appointments.start_time >= ${monthStart}

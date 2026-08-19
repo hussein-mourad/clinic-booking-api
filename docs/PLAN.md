@@ -151,7 +151,7 @@ stays fast and avoids rollover/window-maintenance jobs.
 `GET /doctors/:id/analytics?month=YYYY-MM` -> one aggregate query returning:
 - `total_appointments`: appointments whose slot falls in the month
 - `cancellation_rate`: cancelled / total
-- `peak_booking_hours`: `mode()` over `extract(hour from created_at)`
+- `peak_booking_hours`: `mode()` over `extract(hour from start_time)`
 - `avg_utilization`: `sum(booked_slot_minutes) / sum(available_scheduled_minutes)` —
   availability from `schedules` minus `blocked_slots`, all computed in SQL.
 
