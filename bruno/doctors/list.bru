@@ -1,0 +1,23 @@
+meta {
+  name: List doctors
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/doctors
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Lists all doctors (any authenticated user).
+}

@@ -1,0 +1,28 @@
+meta {
+  name: Monthly analytics
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/doctors/{{doctorId}}/analytics?month=2026-08
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+query {
+  month: 2026-08
+}
+
+docs {
+  Monthly analytics for a doctor, aggregated entirely in SQL (doctor role).
+  Returns total_appointments, cancellation_rate, peak_booking_hours and avg_utilization.
+}

@@ -1,0 +1,37 @@
+meta {
+  name: Book appointment
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/appointments
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "doctorId": {{doctorId}},
+    "startTime": "2026-08-20T10:00:00.000Z"
+  }
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar('appointmentId', res.body.id);
+  }
+}
+
+docs {
+  Books an appointment slot (patient role). startTime must be a valid slot on the
+  doctor's grid. Concurrent double-booking of the same slot returns 409.
+}

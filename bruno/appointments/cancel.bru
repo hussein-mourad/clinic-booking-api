@@ -1,0 +1,24 @@
+meta {
+  name: Cancel appointment
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/appointments/{{appointmentId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Cancels the current patient's booking (patient role only). Only allowed at
+  least 2 hours before the appointment start (otherwise 422).
+}

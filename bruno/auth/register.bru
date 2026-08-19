@@ -1,0 +1,36 @@
+meta {
+  name: Register
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/auth/register
+  body: json
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+body:json {
+  {
+    "email": "patient@example.com",
+    "password": "secret123",
+    "name": "Hussein",
+    "role": "patient"
+  }
+}
+
+docs {
+  Registers a user (patient or doctor) and returns a JWT.
+  Auto-sets the `authToken` collection variable from the response so
+  subsequent authenticated requests work without manual token pasting.
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar('authToken', res.body.token);
+  }
+}

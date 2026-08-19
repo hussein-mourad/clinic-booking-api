@@ -1,0 +1,36 @@
+meta {
+  name: Replace schedule
+  type: http
+  seq: 4
+}
+
+put {
+  url: {{baseUrl}}/doctors/me/schedule
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "entries": [
+      { "dayOfWeek": 0, "startTime": "10:00", "endTime": "16:00" },
+      { "dayOfWeek": 1, "startTime": "10:00", "endTime": "16:00" },
+      { "dayOfWeek": 2, "startTime": "10:00", "endTime": "16:00" },
+      { "dayOfWeek": 3, "startTime": "10:00", "endTime": "16:00" },
+      { "dayOfWeek": 4, "startTime": "10:00", "endTime": "16:00" }
+    ]
+  }
+}
+
+docs {
+  Replaces the current doctor's weekly schedule (doctor role only).
+  dayOfWeek: 0 = Sunday .. 6 = Saturday. Replaces all existing entries.
+}

@@ -1,0 +1,25 @@
+meta {
+  name: Accept offer
+  type: http
+  seq: 2
+}
+
+post {
+  url: {{baseUrl}}/waitlist/{{waitlistId}}/accept
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Accepts a waiting-list offer (patient role). Only valid while the entry is
+  'offered' and within its 15-minute expiry window. Reuses the booking
+  concurrency guard, so it may still return 409 if the slot was taken first.
+}

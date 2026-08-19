@@ -24,5 +24,8 @@ coverage/
 # OS
 .DS_Store
 
+# Session transcripts
+session-*.md
+
 # Drizzle
 drizzle/meta/_journal.json.bak

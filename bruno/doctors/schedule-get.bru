@@ -1,0 +1,23 @@
+meta {
+  name: Get my schedule
+  type: http
+  seq: 3
+}
+
+get {
+  url: {{baseUrl}}/doctors/me/schedule
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Returns the current doctor's weekly schedule (doctor role only).
+}

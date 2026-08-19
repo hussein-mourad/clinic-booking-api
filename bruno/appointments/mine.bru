@@ -1,0 +1,23 @@
+meta {
+  name: My appointments
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/appointments/me
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Lists the current patient's appointments (patient role only).
+}

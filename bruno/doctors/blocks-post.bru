@@ -1,0 +1,38 @@
+meta {
+  name: Block a time range
+  type: http
+  seq: 5
+}
+
+post {
+  url: {{baseUrl}}/doctors/me/blocks
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "blockDate": "2026-08-25",
+    "startTime": "12:00",
+    "endTime": "14:00"
+  }
+}
+
+docs {
+  Blocks a date or time range for the current doctor (doctor role only).
+  Omit startTime/endTime for a full-day block.
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar('blockId', res.body.id);
+  }
+}

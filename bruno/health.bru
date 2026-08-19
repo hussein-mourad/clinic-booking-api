@@ -1,0 +1,19 @@
+meta {
+  name: Health check
+  type: http
+  seq: 1
+}
+
+get {
+  url: {{baseUrl}}/health
+  body: none
+  auth: none
+}
+
+headers {
+  Content-Type: application/json
+}
+
+docs {
+  Liveness check returning API and database status.
+}

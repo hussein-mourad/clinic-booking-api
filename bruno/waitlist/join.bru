@@ -1,0 +1,37 @@
+meta {
+  name: Join waiting list
+  type: http
+  seq: 1
+}
+
+post {
+  url: {{baseUrl}}/waitlist
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "doctorId": {{doctorId}},
+    "startTime": "2026-08-23T10:00:00.000Z"
+  }
+}
+
+docs {
+  Joins the FIFO waiting list for a doctor+slot (patient role). Joining a slot
+  you are already queued for returns 409.
+}
+
+script:post-response {
+  if (res.status === 201) {
+    bru.setVar('waitlistId', res.body.id);
+  }
+}

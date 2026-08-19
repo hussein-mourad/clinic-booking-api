@@ -1,0 +1,29 @@
+meta {
+  name: Set slot duration
+  type: http
+  seq: 7
+}
+
+patch {
+  url: {{baseUrl}}/doctors/me
+  body: json
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+body:json {
+  {
+    "slotDurationMin": 30
+  }
+}
+
+docs {
+  Sets the current doctor's slot duration (doctor role only). Allowed: 15, 30 or 60.
+}

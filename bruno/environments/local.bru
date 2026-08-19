@@ -1,0 +1,15 @@
+vars {
+  @description('Base URL for the local API server.')
+  baseUrl: http://localhost:3000
+  @description('''
+    ID of the demo doctor. The seed script creates a doctor owned by your
+    account or reuses doctor@example.com.
+  ''')
+  doctorId: 1
+  @description('ID of a blocked-slot entry, auto-set by POST /doctors/me/blocks.')
+  blockId: 1
+  @description('ID of an appointment, auto-set by POST /appointments.')
+  appointmentId: 1
+  @description('ID of a waiting-list entry, auto-set by POST /waitlist.')
+  waitlistId: 1
+}

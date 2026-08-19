@@ -1,0 +1,29 @@
+meta {
+  name: Available slots
+  type: http
+  seq: 2
+}
+
+get {
+  url: {{baseUrl}}/doctors/{{doctorId}}/slots?from=2026-08-20&to=2026-08-22
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+query {
+  from: 2026-08-20
+  to: 2026-08-22
+}
+
+docs {
+  Lists the doctor's available appointment slots for an inclusive date range.
+  Availability = schedule - blocked slots - booked appointments.
+}

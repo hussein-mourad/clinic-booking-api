@@ -1,0 +1,24 @@
+meta {
+  name: Leave waiting list
+  type: http
+  seq: 3
+}
+
+delete {
+  url: {{baseUrl}}/waitlist/{{waitlistId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Withdraws the current patient's waiting-list entry (patient role only).
+  Only allowed while the entry is 'waiting' or 'offered'.
+}

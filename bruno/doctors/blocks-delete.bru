@@ -1,0 +1,23 @@
+meta {
+  name: Remove block
+  type: http
+  seq: 6
+}
+
+delete {
+  url: {{baseUrl}}/doctors/me/blocks/{{blockId}}
+  body: none
+  auth: bearer
+}
+
+headers {
+  Content-Type: application/json
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+docs {
+  Removes a blocked date/time range for the current doctor (doctor role only).
+}
