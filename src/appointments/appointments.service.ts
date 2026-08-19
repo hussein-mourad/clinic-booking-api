@@ -117,7 +117,7 @@ export class AppointmentsService {
       .where(
         and(
           eq(appointments.patientId, patientId),
-          status ? eq(appointments.status, status) : eq(appointments.status, 'scheduled'),
+          status ? eq(appointments.status, status) : undefined,
         ),
       )
       .orderBy(asc(appointments.startTime));
