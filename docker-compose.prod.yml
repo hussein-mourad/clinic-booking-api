@@ -1,5 +1,31 @@
 name: clinic-booking-prod
 
+x-api: &api
+  image: clinic-booking-api:prod
+  build: .
+  environment: &api-env
+    NODE_ENV: production
+    PORT: 3000
+    DATABASE_URL: postgres://clinic:clinic@db:5432/clinic
+    REDIS_HOST: redis
+    REDIS_PORT: 6379
+    JWT_SECRET: ${JWT_SECRET:-prod-change-me}
+    JWT_EXPIRES_IN: 1d
+  command: ["bun", "run", "start:prod"]
+  depends_on:
+    db:
+      condition: service_healthy
+    redis:
+      condition: service_healthy
+    migrate:
+      condition: service_completed_successfully
+  healthcheck:
+    test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    interval: 5s
+    timeout: 3s
+    retries: 12
+    start_period: 10s
+
 services:
   db:
     image: postgres:16-alpine
@@ -38,24 +64,42 @@ services:
     depends_on:
       - redis
 
-  api:
+  migrate:
+    image: clinic-booking-api:prod
     build: .
+    environment:
+      <<: *api-env
+    command: ["bun", "dist/db/migrate.js"]
     depends_on:
       db:
         condition: service_healthy
       redis:
         condition: service_healthy
+    restart: "no"
+
+  api-1:
+    <<: *api
     environment:
-      NODE_ENV: production
-      PORT: 3000
-      DATABASE_URL: postgres://clinic:clinic@db:5432/clinic
-      REDIS_HOST: redis
-      REDIS_PORT: 6379
-      JWT_SECRET: ${JWT_SECRET:-prod-change-me}
-      JWT_EXPIRES_IN: 1d
+      <<: *api-env
+      INSTANCE_ID: api-1
+
+  api-2:
+    <<: *api
+    environment:
+      <<: *api-env
+      INSTANCE_ID: api-2
+
+  lb:
+    image: nginx:1.27-alpine
     ports:
-      - "${PROD_API_PORT:-3001}:3000"
-    command: ["sh", "-c", "bun dist/db/migrate.js && bun run start:prod"]
+      - "${PROD_LB_PORT:-8080}:80"
+    volumes:
+      - ./nginx/lb.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      api-1:
+        condition: service_healthy
+      api-2:
+        condition: service_healthy
 
 volumes:
   pgdata:

@@ -18,13 +18,15 @@
     "test:e2e": "jest --config ./test/jest-e2e.json",
     "test:concurrency": "jest --config ./test/jest-e2e.json --runInBand concurrency",
     "proof": "tsx scripts/concurrency-proof.ts",
+    "proof:lb": "tsx scripts/lb-proof.ts",
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/db/migrate.ts",
     "seed": "tsx scripts/seed.ts",
     "seed:full": "tsx scripts/seed-full.ts",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
-    "prod:down": "docker compose -f docker-compose.prod.yml down"
+    "prod:down": "docker compose -f docker-compose.prod.yml down",
+    "prod:logs": "docker compose -f docker-compose.prod.yml logs -f"
   },
   "jest": {
     "moduleFileExtensions": [

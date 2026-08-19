@@ -17,8 +17,9 @@ describe('App (e2e)', () => {
     await app.close();
   });
 
-  it('/health (GET) returns ok with database up', async () => {
+  it('/health (GET) returns ok with database up and an instance id', async () => {
     const res = await request(app.getHttpServer()).get('/health').expect(200);
-    expect(res.body).toEqual({ status: 'ok', database: 'up' });
+    expect(res.body).toMatchObject({ status: 'ok', database: 'up' });
+    expect(typeof res.body.instance).toBe('string');
   });
 });

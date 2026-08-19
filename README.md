@@ -93,6 +93,7 @@ the database level:
 ```bash
 bun run test:concurrency    # e2e: N=25 simultaneous same-slot bookings => 1x201, 24x409
 bun run proof               # same against the LIVE API (docker compose up first)
+bun run prod:up && bun run proof:lb  # against the load-balanced PRODUCTION build (see below)
 ```
 
 Last run: `N=25 same-slot bookings -> 1 x201, 24 x409`.
@@ -105,6 +106,51 @@ Last run: `N=25 same-slot bookings -> 1 x201, 24 x409`.
 | Redis SETNX lock                      | Adds a coordination dependency and a TTL/lease window that can still allow a second writer right after expiry; DB index is simpler and race-free.                      |
 | `SELECT ... FOR UPDATE` of a slot row | Requires a materialized slots table with row-level locking; adds rollover/maintenance jobs. Conditional insert on the computed-on-the-fly grid avoids the extra table. |
 | Application-level check-then-insert   | Classic TOCTOU — two requests can both read "free" and both insert.                                                                                                    |
+
+---
+
+## Load-balanced production demo
+
+The production stack (`docker-compose.prod.yml`, `bun run prod:up`) runs **two API replicas**
+behind an **nginx round-robin load balancer**, sharing one Postgres and one Redis. This is the
+same build intended for Kubernetes/ECS-style horizontal scaling — no in-app locks, no state
+carried between requests (JWT is stateless, BullMQ is backed by shared Redis, and the slot guard
+is the shared Postgres partial-unique index).
+
+```
+           ┌─────────┐
+ browser ─►│   nginx │─ api-1 ─┐
+ :8080     │   :80   │─ api-2 ─┼─► Postgres (shared)
+           └─────────┘         └─► Redis   (shared)
+```
+
+**Why multiple replicas don't double-book:** every instance submits the same guarded
+`INSERT ... ON CONFLICT DO NOTHING`, so even when LB spreads the N concurrent requests across two
+distinct processes, Postgres still lets exactly one row through (the unique index is applied at
+commit). Background jobs are also safe with two workers because reminder `jobId`s are
+deterministic and waitlist offers use a `rowCount==1` claim.
+
+**Boot + demonstrate:**
+
+```bash
+bun run prod:up          # builds image, runs migrations once, starts api-1 + api-2 + nginx
+bun run prod:logs        # optional: watch both instances boot
+bun run proof:lb         # proves BOTH instances serve traffic AND concurrency holds
+```
+
+`proof:lb` (scripts/lb-proof.ts) does two things:
+
+1. Probes `GET /health` 40 times through the LB and tallies the `instance` field
+   (`api-1` / `api-2`) — demonstrating round-robin spread, e.g.
+   `health x40 via LB -> { "api-1": 20, "api-2": 20 }`.
+2. Re-runs the same-slot booking proof against `http://localhost:8080`, asserting
+   exactly one 201 and N-1× 409 across the two replicas.
+
+Set `API_URL` / `CONCURRENCY_N` / `LB_PROBES` to adjust. Tear down with `bun run prod:down`.
+
+**Migrations run exactly once**: a one-shot `migrate` service applies schema changes and the API
+replicas start only after it completes (`service_completed_successfully`) — avoiding concurrent
+migrator races on boot.
 
 ---
 
@@ -162,6 +208,7 @@ bun test                      # unit tests (slot grid, booking resolution)
 bun run test:e2e              # full e2e suite (auth, doctors, slots, booking, reminders, waitlist, analytics, concurrency)
 bun run test:concurrency      # N=25 same-slot booking proof (1 x201, 24 x409)
 bun run proof                 # same proof against the live API
+bun run prod:up && bun run proof:lb  # two replicas behind nginx: traffic spread + proof
 ```
 
 ---

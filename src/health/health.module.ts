@@ -1,6 +1,7 @@
 import { Controller, Get, Injectable, Module } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { Inject, Logger } from '@nestjs/common';
+import { hostname } from 'node:os';
 import { ApiTags } from '@nestjs/swagger';
 import { DRIZZLE } from '../db/database.module';
 import type { Database } from '../db/database.module';
@@ -13,12 +14,13 @@ export class HealthService {
   constructor(@Inject(DRIZZLE) private readonly db: Database) { }
 
   async check() {
+    const instance = process.env.INSTANCE_ID ?? `host:${hostname()}`;
     try {
       await this.db.execute(sql`SELECT 1`);
-      return { status: 'ok', database: 'up' };
+      return { status: 'ok', database: 'up', instance };
     } catch (err) {
       this.logger.error('Database health check failed', err);
-      return { status: 'degraded', database: 'down' };
+      return { status: 'degraded', database: 'down', instance };
     }
   }
 }
