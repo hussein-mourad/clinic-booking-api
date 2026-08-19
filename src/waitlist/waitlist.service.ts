@@ -89,12 +89,20 @@ export class WaitlistService implements OnModuleInit {
         ),
       )
       .limit(1);
-    if (existing) throw new ConflictException('Already on the waiting list for this slot');
+    if (existing)
+      throw new ConflictException('Already on the waiting list for this slot');
 
     const [{ maxPosition }] = await this.db
-      .select({ maxPosition: sql<number>`coalesce(max(${waitingList.position}), 0)` })
+      .select({
+        maxPosition: sql<number>`coalesce(max(${waitingList.position}), 0)`,
+      })
       .from(waitingList)
-      .where(and(eq(waitingList.doctorId, dto.doctorId), eq(waitingList.slotStart, slotStart)));
+      .where(
+        and(
+          eq(waitingList.doctorId, dto.doctorId),
+          eq(waitingList.slotStart, slotStart),
+        ),
+      );
 
     const [row] = await this.db
       .insert(waitingList)
@@ -158,12 +166,15 @@ export class WaitlistService implements OnModuleInit {
         })
         .onConflictDoNothing()
         .returning();
-      if (!created) throw new ConflictException('Slot was taken before the offer');
+      if (!created)
+        throw new ConflictException('Slot was taken before the offer');
       appointment = created;
       await tx
         .update(waitingList)
         .set({ status: 'accepted' })
-        .where(and(eq(waitingList.id, row.id), eq(waitingList.patientId, patientId)));
+        .where(
+          and(eq(waitingList.id, row.id), eq(waitingList.patientId, patientId)),
+        );
       await tx.insert(notifications).values({
         userId: patientId,
         type: 'waitlist_confirmation',
@@ -180,7 +191,10 @@ export class WaitlistService implements OnModuleInit {
 
   /** @returns the patient offered the slot, or null when nobody is next. */
   async claimNext(doctorId: number, slotStart: Date): Promise<number | null> {
-    const result = await this.db.execute<{ id: number; patient_id: number }>(sql`
+    const result = await this.db.execute<{
+      id: number;
+      patient_id: number;
+    }>(sql`
       UPDATE waiting_list w
       SET status = 'offered', offered_at = now(), offer_expires_at = now() + interval '15 minutes'
       FROM (
@@ -220,7 +234,9 @@ export class WaitlistService implements OnModuleInit {
         offerExpiresAt: new Date(Date.now() + OFFER_VALID_MS).toISOString(),
       },
     });
-    this.logger.log(`waitlist: offered ${slotStart.toISOString()} to patient ${patientId}`);
+    this.logger.log(
+      `waitlist: offered ${slotStart.toISOString()} to patient ${patientId}`,
+    );
     return patientId;
   }
 
@@ -229,22 +245,33 @@ export class WaitlistService implements OnModuleInit {
     const expired = await this.db
       .select()
       .from(waitingList)
-      .where(and(eq(waitingList.status, 'offered'), lt(waitingList.offerExpiresAt, new Date())));
+      .where(
+        and(
+          eq(waitingList.status, 'offered'),
+          lt(waitingList.offerExpiresAt, new Date()),
+        ),
+      );
     let expiredCount = 0;
     for (const row of expired) {
       const [updated] = await this.db
         .update(waitingList)
         .set({ status: 'expired' })
-        .where(and(eq(waitingList.id, row.id), eq(waitingList.status, 'offered')))
+        .where(
+          and(eq(waitingList.id, row.id), eq(waitingList.status, 'offered')),
+        )
         .returning({ id: waitingList.id });
       if (updated) {
         expiredCount += 1;
-        this.logger.log(`sweep: expired offer #${updated.id} for slot ${row.slotStart.toISOString()}`);
+        this.logger.log(
+          `sweep: expired offer #${updated.id} for slot ${row.slotStart.toISOString()}`,
+        );
         await this.claimNext(row.doctorId, new Date(row.slotStart));
       }
     }
     if (expired.length > 0) {
-      this.logger.log(`sweep: ${expiredCount}/${expired.length} offers expired, next candidates claimed`);
+      this.logger.log(
+        `sweep: ${expiredCount}/${expired.length} offers expired, next candidates claimed`,
+      );
     }
     return expiredCount;
   }

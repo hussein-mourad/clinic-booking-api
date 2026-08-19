@@ -4,7 +4,10 @@ import { IsInt, Matches, Max, Min } from 'class-validator';
 export const TIME_REGEX = /^([01]\d|2[0-3]):[0-5]\d$/;
 
 export class ScheduleEntryDto {
-  @ApiProperty({ enum: [0, 1, 2, 3, 4, 5, 6], description: '0 = Sunday .. 6 = Saturday' })
+  @ApiProperty({
+    enum: [0, 1, 2, 3, 4, 5, 6],
+    description: '0 = Sunday .. 6 = Saturday',
+  })
   @IsInt()
   @Min(0)
   @Max(6)

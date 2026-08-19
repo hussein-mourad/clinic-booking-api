@@ -8,7 +8,10 @@ import { createApp } from '../src/app.factory';
 import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
 import type { Database } from '../src/db/database.module';
 import { appointments, notifications, users, waitingList } from '../src/db';
-import { WAITLIST_QUEUE, WAITLIST_SWEEP_JOB } from '../src/waitlist/waitlist.constants';
+import {
+  WAITLIST_QUEUE,
+  WAITLIST_SWEEP_JOB,
+} from '../src/waitlist/waitlist.constants';
 
 let emailCounter = 0;
 
@@ -18,13 +21,20 @@ async function registerUser(app: INestApplication, role: 'patient' | 'doctor') {
     .post('/auth/register')
     .send({ email, password: 'secret123', name: email, role })
     .expect(201);
-  return { token: res.body.token as string, user: res.body.user as { id: number } };
+  return {
+    token: res.body.token as string,
+    user: res.body.user as { id: number },
+  };
 }
 
 function nextWorkingDay(offsetDays: number): string {
   const d = new Date(Date.UTC(1970, 0, 1));
   const start = new Date(Date.now() + offsetDays * 86_400_000);
-  d.setUTCFullYear(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+  d.setUTCFullYear(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate(),
+  );
   while (d.getUTCDay() > 4) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
 }
@@ -70,7 +80,9 @@ describe('Waiting list (e2e)', () => {
         await db.delete(waitingList).where(eq(waitingList.patientId, user.id));
         await db.delete(waitingList).where(eq(waitingList.doctorId, user.id));
         await db.delete(appointments).where(eq(appointments.doctorId, user.id));
-        await db.delete(appointments).where(eq(appointments.patientId, user.id));
+        await db
+          .delete(appointments)
+          .where(eq(appointments.patientId, user.id));
         await db.delete(users).where(eq(users.id, user.id));
       }
     }
@@ -79,8 +91,12 @@ describe('Waiting list (e2e)', () => {
   });
 
   async function track(user: { id: number }) {
-    const email = (await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!
-      .email;
+    const email = (
+      await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, user.id))
+    )[0]!.email;
     emails.push(email);
   }
 
@@ -96,7 +112,11 @@ describe('Waiting list (e2e)', () => {
   }
 
   async function entry(id: number) {
-    const [row] = await db.select().from(waitingList).where(eq(waitingList.id, id)).limit(1);
+    const [row] = await db
+      .select()
+      .from(waitingList)
+      .where(eq(waitingList.id, id))
+      .limit(1);
     return row;
   }
 
@@ -190,7 +210,9 @@ describe('Waiting list (e2e)', () => {
       .select()
       .from(notifications)
       .where(eq(notifications.userId, patientB.user.id));
-    expect(confirmation.some((n) => n.type === 'waitlist_confirmation')).toBe(true);
+    expect(confirmation.some((n) => n.type === 'waitlist_confirmation')).toBe(
+      true,
+    );
 
     // The slot is taken again: direct booking by A now conflicts.
     await request(app.getHttpServer())
@@ -251,7 +273,11 @@ describe('Waiting list (e2e)', () => {
         offerExpiresAt: new Date(Date.now() - 60 * 60 * 1000),
       })
       .where(eq(waitingList.id, entryBId));
-    await queue.add(WAITLIST_SWEEP_JOB, {}, { jobId: `sweep-e2e-${Date.now()}-${emailCounter++}` });
+    await queue.add(
+      WAITLIST_SWEEP_JOB,
+      {},
+      { jobId: `sweep-e2e-${Date.now()}-${emailCounter++}` },
+    );
 
     await waitFor(
       () => entry(entryBId),
@@ -308,7 +334,7 @@ describe('Waiting list (e2e)', () => {
       .expect(404);
   }, 30_000);
 
-  it('lists the patient\'s own waiting-list entries with status and doctor name', async () => {
+  it("lists the patient's own waiting-list entries with status and doctor name", async () => {
     const doctor = await registerUser(app, 'doctor');
     const patient = await registerUser(app, 'patient');
     const other = await registerUser(app, 'patient');

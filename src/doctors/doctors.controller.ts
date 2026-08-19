@@ -12,7 +12,12 @@ import {
   Put,
   Query,
 } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload';
 import { Roles } from '../auth/roles.decorator';
@@ -65,7 +70,9 @@ export class DoctorsController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: "Get the current doctor's profile and slot duration" })
+  @ApiOperation({
+    summary: "Get the current doctor's profile and slot duration",
+  })
   @ApiResponse({ status: 200, description: 'Doctor profile' })
   getProfile(@CurrentUser() user: JwtPayload) {
     return this.doctors.getProfile(user.sub);
@@ -73,13 +80,21 @@ export class DoctorsController {
 
   @Get('me/appointments')
   @ApiOperation({ summary: "List the current doctor's booked appointments" })
-  @ApiResponse({ status: 200, description: 'Array of appointments with the patient name' })
-  appointments(@Query() query: ListAppointmentsQuery, @CurrentUser() user: JwtPayload) {
+  @ApiResponse({
+    status: 200,
+    description: 'Array of appointments with the patient name',
+  })
+  appointments(
+    @Query() query: ListAppointmentsQuery,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.doctors.listAppointments(user.sub, query.from, query.to);
   }
 
   @Get('me/analytics')
-  @ApiOperation({ summary: 'Monthly analytics for the current doctor (pure SQL aggregation)' })
+  @ApiOperation({
+    summary: 'Monthly analytics for the current doctor (pure SQL aggregation)',
+  })
   @ApiResponse({ status: 200, description: 'Monthly metrics' })
   @ApiResponse({ status: 404, description: 'Doctor not found' })
   analytics(@Query() query: AnalyticsQuery, @CurrentUser() user: JwtPayload) {
@@ -90,20 +105,27 @@ export class DoctorsController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Replace the current doctor's weekly schedule" })
   @ApiResponse({ status: 200, description: 'Schedule updated' })
-  replaceSchedule(@Body() dto: UpsertScheduleDto, @CurrentUser() user: JwtPayload) {
+  replaceSchedule(
+    @Body() dto: UpsertScheduleDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.doctors.replaceSchedule(user.sub, dto.entries);
   }
 
   @Post('me/blocks')
   @HttpCode(HttpStatus.CREATED)
-  @ApiOperation({ summary: 'Block a date or time range for the current doctor' })
+  @ApiOperation({
+    summary: 'Block a date or time range for the current doctor',
+  })
   @ApiResponse({ status: 201, description: 'Block created' })
   addBlock(@Body() dto: CreateBlockDto, @CurrentUser() user: JwtPayload) {
     return this.doctors.addBlock(user.sub, dto);
   }
 
   @Get('me/blocks')
-  @ApiOperation({ summary: 'List blocked dates/time ranges for the current doctor' })
+  @ApiOperation({
+    summary: 'List blocked dates/time ranges for the current doctor',
+  })
   @ApiResponse({ status: 200, description: 'Array of blocked slots' })
   listBlocks(@CurrentUser() user: JwtPayload) {
     return this.doctors.listBlocks(user.sub);
@@ -113,7 +135,10 @@ export class DoctorsController {
   @ApiOperation({ summary: 'Get a single blocked date/time range' })
   @ApiResponse({ status: 200, description: 'Blocked slot' })
   @ApiResponse({ status: 404, description: 'Block not found' })
-  getBlock(@Param('blockId', ParseIntPipe) blockId: number, @CurrentUser() user: JwtPayload) {
+  getBlock(
+    @Param('blockId', ParseIntPipe) blockId: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.doctors.getBlock(user.sub, blockId);
   }
 
@@ -135,15 +160,23 @@ export class DoctorsController {
   @ApiOperation({ summary: 'Remove a blocked date/time range' })
   @ApiResponse({ status: 200, description: 'Block removed' })
   @ApiResponse({ status: 404, description: 'Block not found' })
-  removeBlock(@Param('blockId', ParseIntPipe) blockId: number, @CurrentUser() user: JwtPayload) {
+  removeBlock(
+    @Param('blockId', ParseIntPipe) blockId: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.doctors.removeBlock(user.sub, blockId);
   }
 
   @Patch('me')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Set the current doctor slot duration (15, 30 or 60 minutes)' })
+  @ApiOperation({
+    summary: 'Set the current doctor slot duration (15, 30 or 60 minutes)',
+  })
   @ApiResponse({ status: 200, description: 'Slot duration updated' })
-  setSlotDuration(@Body() dto: SetSlotDurationDto, @CurrentUser() user: JwtPayload) {
+  setSlotDuration(
+    @Body() dto: SetSlotDurationDto,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.doctors.setSlotDuration(user.sub, dto.slotDurationMin);
   }
 }

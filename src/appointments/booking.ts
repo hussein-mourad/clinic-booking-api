@@ -18,6 +18,8 @@ export function resolveBookableSlot(
   const iso = new Date(startTime).toISOString();
   const slot = available.find((s) => s.start === iso);
   if (!slot) return null;
-  const expectedEnd = new Date(new Date(iso).getTime() + durationMin * 60_000).toISOString();
+  const expectedEnd = new Date(
+    new Date(iso).getTime() + durationMin * 60_000,
+  ).toISOString();
   return slot.end === expectedEnd ? slot : null;
 }

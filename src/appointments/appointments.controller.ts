@@ -1,5 +1,21 @@
-import { Body, Controller, Delete, Get, HttpCode, HttpStatus, Param, ParseIntPipe, Post, Query } from '@nestjs/common';
-import { ApiBearerAuth, ApiOperation, ApiResponse, ApiTags } from '@nestjs/swagger';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpCode,
+  HttpStatus,
+  Param,
+  ParseIntPipe,
+  Post,
+  Query,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiResponse,
+  ApiTags,
+} from '@nestjs/swagger';
 import { CurrentUser } from '../auth/current-user.decorator';
 import type { JwtPayload } from '../auth/jwt-payload';
 import { Roles } from '../auth/roles.decorator';
@@ -25,7 +41,10 @@ export class AppointmentsController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: "List the current patient's appointments, optionally filtered by status" })
+  @ApiOperation({
+    summary:
+      "List the current patient's appointments, optionally filtered by status",
+  })
   @ApiResponse({ status: 200, description: 'Array of appointments' })
   mine(@CurrentUser() user: JwtPayload, @Query() query: MineQuery) {
     return this.appointments.mine(user.sub, query.status);
@@ -33,12 +52,20 @@ export class AppointmentsController {
 
   @Delete(':id')
   @HttpCode(HttpStatus.OK)
-  @ApiOperation({ summary: 'Cancel a booking (must be at least 2h before start)' })
+  @ApiOperation({
+    summary: 'Cancel a booking (must be at least 2h before start)',
+  })
   @ApiResponse({ status: 200, description: 'Appointment cancelled' })
   @ApiResponse({ status: 404, description: 'Appointment not found' })
   @ApiResponse({ status: 409, description: 'Appointment is no longer active' })
-  @ApiResponse({ status: 422, description: 'Within the 2h cancellation window' })
-  cancel(@Param('id', ParseIntPipe) id: number, @CurrentUser() user: JwtPayload) {
+  @ApiResponse({
+    status: 422,
+    description: 'Within the 2h cancellation window',
+  })
+  cancel(
+    @Param('id', ParseIntPipe) id: number,
+    @CurrentUser() user: JwtPayload,
+  ) {
     return this.appointments.cancel(user.sub, id);
   }
 }

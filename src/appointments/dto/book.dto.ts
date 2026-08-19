@@ -7,7 +7,10 @@ export class BookDto {
   @Min(1)
   doctorId: number;
 
-  @ApiProperty({ example: '2026-08-23T10:00:00.000Z', description: 'Slot start (UTC, on the slot grid)' })
+  @ApiProperty({
+    example: '2026-08-23T10:00:00.000Z',
+    description: 'Slot start (UTC, on the slot grid)',
+  })
   @IsDateString()
   startTime: string;
 }

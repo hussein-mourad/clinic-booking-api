@@ -52,7 +52,10 @@ export function generateSlots({
   durationMin,
 }: GenerateSlotsParams): GeneratedSlot[] {
   const stepMs = durationMin * ONE_MINUTE_MS;
-  const scheduleByDay = new Map<number, { startTime: string; endTime: string }>();
+  const scheduleByDay = new Map<
+    number,
+    { startTime: string; endTime: string }
+  >();
   for (const day of schedule)
     scheduleByDay.set(day.dayOfWeek, {
       startTime: toHHMM(day.startTime),
@@ -61,7 +64,10 @@ export function generateSlots({
 
   // Index blocked slots by date; keep full-day blocks separate.
   const fullyBlockedDates = new Set<string>();
-  const blockedRangesByDate = new Map<string, { start: number; end: number }[]>();
+  const blockedRangesByDate = new Map<
+    string,
+    { start: number; end: number }[]
+  >();
   for (const block of blocks) {
     if (block.startTime === null || block.endTime === null) {
       fullyBlockedDates.add(block.blockDate);
@@ -94,7 +100,9 @@ export function generateSlots({
       // Slots tile the working hours; the last slot ends exactly at dayEnd.
       for (let start = dayStart; start + stepMs <= dayEnd; start += stepMs) {
         const end = start + stepMs;
-        const overlapsBlock = ranges.some((r) => start < r.end && end > r.start);
+        const overlapsBlock = ranges.some(
+          (r) => start < r.end && end > r.start,
+        );
         if (!overlapsBlock && !bookedAt.has(start)) {
           slots.push({
             start: new Date(start).toISOString(),

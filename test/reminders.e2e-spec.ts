@@ -8,21 +8,36 @@ import { createApp } from '../src/app.factory';
 import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
 import type { Database } from '../src/db/database.module';
 import { appointments, notifications, users } from '../src/db';
-import { REMINDER_JOB, REMINDERS_QUEUE, reminderJobId } from '../src/jobs/reminders.constants';
+import {
+  REMINDER_JOB,
+  REMINDERS_QUEUE,
+  reminderJobId,
+} from '../src/jobs/reminders.constants';
 
-async function registerUser(app: INestApplication, role: 'patient' | 'doctor', name: string) {
+async function registerUser(
+  app: INestApplication,
+  role: 'patient' | 'doctor',
+  name: string,
+) {
   const email = `${role}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   const res = await request(app.getHttpServer())
     .post('/auth/register')
     .send({ email, password: 'secret123', name, role })
     .expect(201);
-  return { token: res.body.token as string, user: res.body.user as { id: number } };
+  return {
+    token: res.body.token as string,
+    user: res.body.user as { id: number },
+  };
 }
 
 function nextWorkingDay(offsetDays: number): string {
   const d = new Date(Date.UTC(1970, 0, 1));
   const start = new Date(Date.now() + offsetDays * 86_400_000);
-  d.setUTCFullYear(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate());
+  d.setUTCFullYear(
+    start.getUTCFullYear(),
+    start.getUTCMonth(),
+    start.getUTCDate(),
+  );
   while (d.getUTCDay() > 4) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
 }
@@ -52,7 +67,9 @@ describe('Reminder job (e2e)', () => {
       if (user) {
         await db.delete(notifications).where(eq(notifications.userId, user.id));
         await db.delete(appointments).where(eq(appointments.doctorId, user.id));
-        await db.delete(appointments).where(eq(appointments.patientId, user.id));
+        await db
+          .delete(appointments)
+          .where(eq(appointments.patientId, user.id));
         await db.delete(users).where(eq(users.id, user.id));
       }
     }
@@ -64,8 +81,18 @@ describe('Reminder job (e2e)', () => {
     const doctor = await registerUser(app, 'doctor', 'Dr Reminder');
     const patient = await registerUser(app, 'patient', 'Reminder Patient');
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctor.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
     );
 
     const day = nextWorkingDay(3);
@@ -111,7 +138,11 @@ describe('Reminder job (e2e)', () => {
     const stamp = Date.now();
     await queue.add(
       REMINDER_JOB,
-      { appointmentId, doctorId: doctor.user.id, startTime: '2026-08-01T10:00:00.000Z' },
+      {
+        appointmentId,
+        doctorId: doctor.user.id,
+        startTime: '2026-08-01T10:00:00.000Z',
+      },
       { jobId: `reminder-e2e-${stamp}-first`, attempts: 1 },
     );
 
@@ -131,12 +162,18 @@ describe('Reminder job (e2e)', () => {
     }
     expect(notification).toHaveLength(1);
     expect(notification[0]!.type).toBe('reminder');
-    expect((notification[0]!.payload as { appointmentId: number }).appointmentId).toBe(appointmentId);
+    expect(
+      (notification[0]!.payload as { appointmentId: number }).appointmentId,
+    ).toBe(appointmentId);
 
     // Simulate a retry: same appointment, different jobId. Must be a no-op.
     await queue.add(
       REMINDER_JOB,
-      { appointmentId, doctorId: doctor.user.id, startTime: '2026-08-01T10:00:00.000Z' },
+      {
+        appointmentId,
+        doctorId: doctor.user.id,
+        startTime: '2026-08-01T10:00:00.000Z',
+      },
       { jobId: `reminder-e2e-${stamp}-retry`, attempts: 1 },
     );
     await sleep(500);

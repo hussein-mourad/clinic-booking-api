@@ -1,5 +1,12 @@
 import { sql } from 'drizzle-orm';
-import { index, integer, pgTable, serial, timestamp, uniqueIndex } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  pgTable,
+  serial,
+  timestamp,
+  uniqueIndex,
+} from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { appointmentStatusEnum } from './enums';
 import { createdAt } from './timestamps';

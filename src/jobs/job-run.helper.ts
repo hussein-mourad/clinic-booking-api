@@ -15,6 +15,9 @@ export function logJobRun(
   detail?: Record<string, unknown>,
 ): void {
   const instance = process.env.INSTANCE_ID ?? `host:${hostname()}`;
-  const suffix = detail && Object.keys(detail).length ? ` ${JSON.stringify(detail)}` : '';
-  logger.log(`[job] ${queue}::${job.name} id=${job.id} instance=${instance} -> ${outcome}${suffix}`);
+  const suffix =
+    detail && Object.keys(detail).length ? ` ${JSON.stringify(detail)}` : '';
+  logger.log(
+    `[job] ${queue}::${job.name} id=${job.id} instance=${instance} -> ${outcome}${suffix}`,
+  );
 }

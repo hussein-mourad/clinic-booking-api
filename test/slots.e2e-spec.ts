@@ -7,13 +7,20 @@ import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
 import type { Database } from '../src/db/database.module';
 import { appointments, users } from '../src/db';
 
-async function registerUser(app: INestApplication, role: 'patient' | 'doctor', name: string) {
+async function registerUser(
+  app: INestApplication,
+  role: 'patient' | 'doctor',
+  name: string,
+) {
   const email = `${role}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   const res = await request(app.getHttpServer())
     .post('/auth/register')
     .send({ email, password: 'secret123', name, role })
     .expect(201);
-  return { token: res.body.token as string, user: res.body.user as { id: number } };
+  return {
+    token: res.body.token as string,
+    user: res.body.user as { id: number },
+  };
 }
 
 function nextDayOfWeek(day: number): string {
@@ -55,8 +62,18 @@ describe('Slots (e2e)', () => {
     const doctor = await registerUser(app, 'doctor', 'Dr Slots');
     const patient = await registerUser(app, 'patient', 'Slot Patient');
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctor.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
     );
     const day = nextDayOfWeek(0);
     await request(app.getHttpServer())
@@ -67,7 +84,9 @@ describe('Slots (e2e)', () => {
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctor.token}`)
-      .send({ entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }] })
+      .send({
+        entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }],
+      })
       .expect(200);
     return { doctor, patient, day };
   }
@@ -81,7 +100,9 @@ describe('Slots (e2e)', () => {
       .expect(200);
     expect(base.body).toHaveLength(12);
     expect(slotHourMinutes(base.body[0].start)).toBe('10:00');
-    expect(slotHourMinutes(base.body[base.body.length - 1].start)).toBe('15:30');
+    expect(slotHourMinutes(base.body[base.body.length - 1].start)).toBe(
+      '15:30',
+    );
 
     // Full-day block => no slots
     const block = await request(app.getHttpServer())
@@ -110,7 +131,9 @@ describe('Slots (e2e)', () => {
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
     expect(ranged.body).toHaveLength(10);
-    const rangedTimes = ranged.body.map((s: { start: string }) => slotHourMinutes(s.start));
+    const rangedTimes = ranged.body.map((s: { start: string }) =>
+      slotHourMinutes(s.start),
+    );
     expect(rangedTimes).not.toContain('12:30');
     expect(rangedTimes).not.toContain('13:00');
 
@@ -135,7 +158,9 @@ describe('Slots (e2e)', () => {
       .get(`/doctors/${doctor.user.id}/slots?from=${day}&to=${day}`)
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
-    const finalTimes = final.body.map((s: { start: string }) => slotHourMinutes(s.start));
+    const finalTimes = final.body.map((s: { start: string }) =>
+      slotHourMinutes(s.start),
+    );
     expect(finalTimes).toHaveLength(11);
     expect(finalTimes).not.toContain('11:00');
   });
@@ -158,7 +183,14 @@ describe('Slots (e2e)', () => {
 
   it('returns 404 for an unknown doctor', async () => {
     const patient = await registerUser(app, 'patient', 'Ghost Patient');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
+    );
     await request(app.getHttpServer())
       .get('/doctors/999999/slots?from=2026-08-23&to=2026-08-23')
       .set('Authorization', `Bearer ${patient.token}`)

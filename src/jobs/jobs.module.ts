@@ -17,7 +17,10 @@ import { RemindersProcessor } from './reminders.processor';
       }),
       inject: [ConfigService],
     }),
-    BullModule.registerQueue({ name: REMINDERS_QUEUE }, { name: WAITLIST_QUEUE }),
+    BullModule.registerQueue(
+      { name: REMINDERS_QUEUE },
+      { name: WAITLIST_QUEUE },
+    ),
   ],
   providers: [RemindersProcessor],
   exports: [BullModule],

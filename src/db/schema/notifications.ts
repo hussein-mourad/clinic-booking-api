@@ -1,4 +1,11 @@
-import { index, integer, jsonb, pgTable, serial, timestamp } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  jsonb,
+  pgTable,
+  serial,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { notificationTypeEnum } from './enums';
 

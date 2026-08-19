@@ -19,7 +19,10 @@ describe('generateSlots', () => {
     });
 
     expect(slots).toHaveLength(12); // 10:00..15:30 every 30 min
-    expect(slots[0]).toEqual({ start: `${SUNDAY}T10:00:00.000Z`, end: `${SUNDAY}T10:30:00.000Z` });
+    expect(slots[0]).toEqual({
+      start: `${SUNDAY}T10:00:00.000Z`,
+      end: `${SUNDAY}T10:30:00.000Z`,
+    });
     expect(slots[slots.length - 1].end).toBe(`${SUNDAY}T16:00:00.000Z`);
   });
 

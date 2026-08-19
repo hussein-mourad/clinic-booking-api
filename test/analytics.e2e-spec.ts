@@ -15,7 +15,10 @@ async function registerUser(app: INestApplication, role: 'patient' | 'doctor') {
     .post('/auth/register')
     .send({ email, password: 'secret123', name: email, role })
     .expect(201);
-  return { token: res.body.token as string, user: res.body.user as { id: number } };
+  return {
+    token: res.body.token as string,
+    user: res.body.user as { id: number },
+  };
 }
 
 function pad(n: number) {
@@ -57,7 +60,9 @@ describe('Doctor analytics (e2e)', () => {
       if (user) {
         await db.delete(notifications).where(eq(notifications.userId, user.id));
         await db.delete(appointments).where(eq(appointments.doctorId, user.id));
-        await db.delete(appointments).where(eq(appointments.patientId, user.id));
+        await db
+          .delete(appointments)
+          .where(eq(appointments.patientId, user.id));
         await db.delete(users).where(eq(users.id, user.id));
       }
     }
@@ -66,8 +71,12 @@ describe('Doctor analytics (e2e)', () => {
   });
 
   async function track(user: { id: number }) {
-    const email = (await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!
-      .email;
+    const email = (
+      await db
+        .select({ email: users.email })
+        .from(users)
+        .where(eq(users.id, user.id))
+    )[0]!.email;
     emails.push(email);
   }
 
@@ -87,11 +96,16 @@ describe('Doctor analytics (e2e)', () => {
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctor.token}`)
-      .send({ entries: [{ dayOfWeek: weekday, startTime: '10:00', endTime: '12:00' }] })
+      .send({
+        entries: [{ dayOfWeek: weekday, startTime: '10:00', endTime: '12:00' }],
+      })
       .expect(200);
 
     // Book two 15-min slots at 10:00 and 11:00.
-    for (const [i, startTime] of [`${day}T10:00:00.000Z`, `${day}T11:00:00.000Z`].entries()) {
+    for (const [i, startTime] of [
+      `${day}T10:00:00.000Z`,
+      `${day}T11:00:00.000Z`,
+    ].entries()) {
       await request(app.getHttpServer())
         .post('/appointments')
         .set('Authorization', `Bearer ${patient.token}`)
@@ -126,7 +140,9 @@ describe('Doctor analytics (e2e)', () => {
     // 2 x 15 booked minutes over (120 scheduled minutes x occurrences of the weekday).
     const monthStart = new Date(`${month}-01T00:00:00Z`);
     const expectedUtil = 30 / (120 * weekdaysInMonth(monthStart, weekday));
-    expect(Math.abs(res.body.avg_utilization - expectedUtil)).toBeLessThan(0.0001);
+    expect(Math.abs(res.body.avg_utilization - expectedUtil)).toBeLessThan(
+      0.0001,
+    );
   }, 30_000);
 
   it('blocks non-doctors and validates month format', async () => {

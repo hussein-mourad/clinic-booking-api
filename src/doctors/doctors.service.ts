@@ -122,8 +122,12 @@ export class DoctorsService {
       .where(
         and(
           eq(appointments.doctorId, doctorId),
-          from ? gte(appointments.startTime, new Date(`${from}T00:00:00Z`)) : undefined,
-          to ? lte(appointments.startTime, new Date(`${to}T23:59:59.999Z`)) : undefined,
+          from
+            ? gte(appointments.startTime, new Date(`${from}T00:00:00Z`))
+            : undefined,
+          to
+            ? lte(appointments.startTime, new Date(`${to}T23:59:59.999Z`))
+            : undefined,
         ),
       )
       .orderBy(asc(appointments.startTime));
@@ -133,7 +137,9 @@ export class DoctorsService {
     const hasStart = dto.startTime !== undefined;
     const hasEnd = dto.endTime !== undefined;
     if (hasStart !== hasEnd) {
-      throw new BadRequestException('Provide both startTime and endTime, or neither for a full-day block');
+      throw new BadRequestException(
+        'Provide both startTime and endTime, or neither for a full-day block',
+      );
     }
     if (hasStart && dto.startTime! >= dto.endTime!) {
       throw new BadRequestException('startTime must be before endTime');
@@ -158,7 +164,9 @@ export class DoctorsService {
   async removeBlock(doctorId: number, blockId: number) {
     const result = await this.db
       .delete(blockedSlots)
-      .where(and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)));
+      .where(
+        and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)),
+      );
     if (result.rowCount === 0) {
       throw new NotFoundException('Block not found');
     }
@@ -181,7 +189,9 @@ export class DoctorsService {
     const [row] = await this.db
       .select()
       .from(blockedSlots)
-      .where(and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)))
+      .where(
+        and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)),
+      )
       .limit(1);
     if (!row) throw new NotFoundException('Block not found');
     return {
@@ -195,7 +205,9 @@ export class DoctorsService {
     const hasStart = dto.startTime !== undefined;
     const hasEnd = dto.endTime !== undefined;
     if (hasStart !== hasEnd) {
-      throw new BadRequestException('Provide both startTime and endTime, or neither for a full-day block');
+      throw new BadRequestException(
+        'Provide both startTime and endTime, or neither for a full-day block',
+      );
     }
     if (hasStart && dto.startTime! >= dto.endTime!) {
       throw new BadRequestException('startTime must be before endTime');
@@ -208,7 +220,9 @@ export class DoctorsService {
         ...(dto.startTime !== undefined ? { startTime: dto.startTime } : {}),
         ...(dto.endTime !== undefined ? { endTime: dto.endTime } : {}),
       })
-      .where(and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)))
+      .where(
+        and(eq(blockedSlots.id, blockId), eq(blockedSlots.doctorId, doctorId)),
+      )
       .returning();
     if (result.length === 0) {
       throw new NotFoundException('Block not found');
@@ -341,10 +355,13 @@ export class DoctorsService {
       throw new BadRequestException('to must be on or after from');
     }
     const rangeDays =
-      (new Date(`${to}T00:00:00Z`).getTime() - new Date(`${from}T00:00:00Z`).getTime()) /
+      (new Date(`${to}T00:00:00Z`).getTime() -
+        new Date(`${from}T00:00:00Z`).getTime()) /
       (1000 * 60 * 60 * 24);
     if (rangeDays < 0 || rangeDays > MAX_SLOT_RANGE_DAYS) {
-      throw new BadRequestException(`date range must be within ${MAX_SLOT_RANGE_DAYS} days`);
+      throw new BadRequestException(
+        `date range must be within ${MAX_SLOT_RANGE_DAYS} days`,
+      );
     }
   }
 
@@ -383,6 +400,11 @@ export class DoctorsService {
         ),
     ]);
 
-    return { duration: doctor[0]!.slotDurationMin, schedule, blocks, bookedRows };
+    return {
+      duration: doctor[0]!.slotDurationMin,
+      schedule,
+      blocks,
+      bookedRows,
+    };
   }
 }

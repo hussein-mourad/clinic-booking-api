@@ -1,4 +1,11 @@
-import { date, index, integer, pgTable, serial, time } from 'drizzle-orm/pg-core';
+import {
+  date,
+  index,
+  integer,
+  pgTable,
+  serial,
+  time,
+} from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { createdAt } from './timestamps';
 

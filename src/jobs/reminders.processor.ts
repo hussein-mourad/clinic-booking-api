@@ -6,7 +6,11 @@ import { DRIZZLE } from '../db/database.module';
 import type { Database } from '../db/database.module';
 import { appointments, notifications } from '../db';
 import { logJobRun } from './job-run.helper';
-import { REMINDER_JOB, REMINDERS_QUEUE, ReminderJobData } from './reminders.constants';
+import {
+  REMINDER_JOB,
+  REMINDERS_QUEUE,
+  ReminderJobData,
+} from './reminders.constants';
 
 /**
  * Sends the T-24h appointment reminder by writing a notification row.
@@ -26,19 +30,31 @@ export class RemindersProcessor extends WorkerHost {
 
   async process(job: Job<ReminderJobData>): Promise<void> {
     if (job.name !== REMINDER_JOB) return;
-    logJobRun(this.logger, REMINDERS_QUEUE, job, 'start', { appointmentId: job.data.appointmentId });
+    logJobRun(this.logger, REMINDERS_QUEUE, job, 'start', {
+      appointmentId: job.data.appointmentId,
+    });
 
     const [appointment] = await this.db
-      .select({ id: appointments.id, patientId: appointments.patientId, status: appointments.status })
+      .select({
+        id: appointments.id,
+        patientId: appointments.patientId,
+        status: appointments.status,
+      })
       .from(appointments)
       .where(eq(appointments.id, job.data.appointmentId))
       .limit(1);
 
     if (!appointment || appointment.status !== 'scheduled') {
-      logJobRun(this.logger, REMINDERS_QUEUE, job, 'skipped (no active appointment)', {
-        appointmentId: job.data.appointmentId,
-        status: appointment?.status,
-      });
+      logJobRun(
+        this.logger,
+        REMINDERS_QUEUE,
+        job,
+        'skipped (no active appointment)',
+        {
+          appointmentId: job.data.appointmentId,
+          status: appointment?.status,
+        },
+      );
       return;
     }
 
@@ -53,9 +69,15 @@ export class RemindersProcessor extends WorkerHost {
       )
       .limit(1);
     if (existing) {
-      logJobRun(this.logger, REMINDERS_QUEUE, job, 'skipped (reminder already sent)', {
-        notificationId: existing.id,
-      });
+      logJobRun(
+        this.logger,
+        REMINDERS_QUEUE,
+        job,
+        'skipped (reminder already sent)',
+        {
+          notificationId: existing.id,
+        },
+      );
       return;
     }
 

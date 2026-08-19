@@ -7,13 +7,20 @@ import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
 import type { Database } from '../src/db/database.module';
 import { users, appointments, notifications } from '../src/db';
 
-async function registerUser(app: INestApplication, role: 'patient' | 'doctor', name: string) {
+async function registerUser(
+  app: INestApplication,
+  role: 'patient' | 'doctor',
+  name: string,
+) {
   const email = `${role}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   const res = await request(app.getHttpServer())
     .post('/auth/register')
     .send({ email, password: 'secret123', name, role })
     .expect(201);
-  return { token: res.body.token as string, user: res.body.user as { id: number } };
+  return {
+    token: res.body.token as string,
+    user: res.body.user as { id: number },
+  };
 }
 
 describe('Doctors (e2e)', () => {
@@ -37,7 +44,9 @@ describe('Doctors (e2e)', () => {
       if (user) {
         await db.delete(notifications).where(eq(notifications.userId, user.id));
         await db.delete(appointments).where(eq(appointments.doctorId, user.id));
-        await db.delete(appointments).where(eq(appointments.patientId, user.id));
+        await db
+          .delete(appointments)
+          .where(eq(appointments.patientId, user.id));
         await db.delete(users).where(eq(users.id, user.id));
       }
     }
@@ -51,9 +60,23 @@ describe('Doctors (e2e)', () => {
 
   it('lists doctors for any authenticated user', async () => {
     const patient = await registerUser(app, 'patient', 'Patient Lister');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
+    );
     const doctor = await registerUser(app, 'doctor', 'Dr Listed');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctor.user.id))
+      )[0]!.email,
+    );
 
     const res = await request(app.getHttpServer())
       .get('/doctors')
@@ -62,7 +85,9 @@ describe('Doctors (e2e)', () => {
 
     expect(Array.isArray(res.body)).toBe(true);
     expect(res.body.map((d: { id: number }) => d.id)).toContain(doctor.user.id);
-    expect(res.body.find((d: { id: number }) => d.id === doctor.user.id)).toMatchObject({
+    expect(
+      res.body.find((d: { id: number }) => d.id === doctor.user.id),
+    ).toMatchObject({
       name: 'Dr Listed',
       slotDurationMin: 15,
     });
@@ -72,7 +97,14 @@ describe('Doctors (e2e)', () => {
 
   it('doctor sets and reads a weekly schedule', async () => {
     const { token, user } = await registerUser(app, 'doctor', 'Dr Schedule');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, user.id))
+      )[0]!.email,
+    );
 
     const put = await request(app.getHttpServer())
       .put('/doctors/me/schedule')
@@ -86,7 +118,12 @@ describe('Doctors (e2e)', () => {
       .expect(200);
 
     expect(put.body).toHaveLength(2);
-    expect(put.body[0]).toMatchObject({ doctorId: user.id, dayOfWeek: 0, startTime: '10:00', endTime: '16:00' });
+    expect(put.body[0]).toMatchObject({
+      doctorId: user.id,
+      dayOfWeek: 0,
+      startTime: '10:00',
+      endTime: '16:00',
+    });
 
     const get = await request(app.getHttpServer())
       .get('/doctors/me/schedule')
@@ -96,8 +133,19 @@ describe('Doctors (e2e)', () => {
   });
 
   it('rejects duplicate days and inverted times', async () => {
-    const { token, user } = await registerUser(app, 'doctor', 'Dr Bad Schedule');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+    const { token, user } = await registerUser(
+      app,
+      'doctor',
+      'Dr Bad Schedule',
+    );
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, user.id))
+      )[0]!.email,
+    );
 
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
@@ -113,13 +161,22 @@ describe('Doctors (e2e)', () => {
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${token}`)
-      .send({ entries: [{ dayOfWeek: 2, startTime: '16:00', endTime: '10:00' }] })
+      .send({
+        entries: [{ dayOfWeek: 2, startTime: '16:00', endTime: '10:00' }],
+      })
       .expect(400);
   });
 
   it('sets slot duration and rejects invalid values', async () => {
     const { token, user } = await registerUser(app, 'doctor', 'Dr Duration');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, user.id))
+      )[0]!.email,
+    );
 
     await request(app.getHttpServer())
       .patch('/doctors/me')
@@ -136,14 +193,26 @@ describe('Doctors (e2e)', () => {
 
   it('adds and removes blocked slots', async () => {
     const { token, user } = await registerUser(app, 'doctor', 'Dr Blocks');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, user.id))
+      )[0]!.email,
+    );
 
     const fullDay = await request(app.getHttpServer())
       .post('/doctors/me/blocks')
       .set('Authorization', `Bearer ${token}`)
       .send({ blockDate: '2026-08-25' })
       .expect(201);
-    expect(fullDay.body).toMatchObject({ doctorId: user.id, blockDate: '2026-08-25', startTime: null, endTime: null });
+    expect(fullDay.body).toMatchObject({
+      doctorId: user.id,
+      blockDate: '2026-08-25',
+      startTime: null,
+      endTime: null,
+    });
 
     const range = await request(app.getHttpServer())
       .post('/doctors/me/blocks')
@@ -169,25 +238,45 @@ describe('Doctors (e2e)', () => {
       .expect(404);
   });
 
-  it('manages only its own schedule and keeps doctors isolated', async () => {    const patient = await registerUser(app, 'patient', 'Patient');
+  it('manages only its own schedule and keeps doctors isolated', async () => {
+    const patient = await registerUser(app, 'patient', 'Patient');
     const doctorA = await registerUser(app, 'doctor', 'Dr A');
     const doctorB = await registerUser(app, 'doctor', 'Dr B');
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctorA.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctorB.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctorA.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctorB.user.id))
+      )[0]!.email,
     );
 
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${patient.token}`)
-      .send({ entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }] })
+      .send({
+        entries: [{ dayOfWeek: 0, startTime: '10:00', endTime: '16:00' }],
+      })
       .expect(403);
 
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctorB.token}`)
-      .send({ entries: [{ dayOfWeek: 1, startTime: '08:00', endTime: '12:00' }] })
+      .send({
+        entries: [{ dayOfWeek: 1, startTime: '08:00', endTime: '12:00' }],
+      })
       .expect(200);
 
     const a = await request(app.getHttpServer())
@@ -206,7 +295,14 @@ describe('Doctors (e2e)', () => {
 
   it('returns own profile with slot duration', async () => {
     const { token, user } = await registerUser(app, 'doctor', 'Dr Profile');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, user.id))
+      )[0]!.email,
+    );
 
     const res = await request(app.getHttpServer())
       .get('/doctors/me')
@@ -218,7 +314,14 @@ describe('Doctors (e2e)', () => {
 
   it('lists, reads and updates blocked slots', async () => {
     const { token, user } = await registerUser(app, 'doctor', 'Dr Blocks CRUD');
-    emails.push((await db.select({ email: users.email }).from(users).where(eq(users.id, user.id)))[0]!.email);
+    emails.push(
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, user.id))
+      )[0]!.email,
+    );
 
     const created = await request(app.getHttpServer())
       .post('/doctors/me/blocks')
@@ -230,20 +333,30 @@ describe('Doctors (e2e)', () => {
       .get('/doctors/me/blocks')
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(list.body.map((b: { id: number }) => b.id)).toContain(created.body.id);
+    expect(list.body.map((b: { id: number }) => b.id)).toContain(
+      created.body.id,
+    );
 
     const single = await request(app.getHttpServer())
       .get(`/doctors/me/blocks/${created.body.id}`)
       .set('Authorization', `Bearer ${token}`)
       .expect(200);
-    expect(single.body).toMatchObject({ blockDate: '2026-08-25', startTime: '12:00', endTime: '14:00' });
+    expect(single.body).toMatchObject({
+      blockDate: '2026-08-25',
+      startTime: '12:00',
+      endTime: '14:00',
+    });
 
     const updated = await request(app.getHttpServer())
       .patch(`/doctors/me/blocks/${created.body.id}`)
       .set('Authorization', `Bearer ${token}`)
       .send({ blockDate: '2026-08-26', startTime: '09:00', endTime: '10:00' })
       .expect(200);
-    expect(updated.body).toMatchObject({ blockDate: '2026-08-26', startTime: '09:00', endTime: '10:00' });
+    expect(updated.body).toMatchObject({
+      blockDate: '2026-08-26',
+      startTime: '09:00',
+      endTime: '10:00',
+    });
 
     await request(app.getHttpServer())
       .patch(`/doctors/me/blocks/${created.body.id}`)
@@ -261,8 +374,18 @@ describe('Doctors (e2e)', () => {
     const doctorA = await registerUser(app, 'doctor', 'Dr Blocks A');
     const doctorB = await registerUser(app, 'doctor', 'Dr Blocks B');
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctorA.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctorB.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctorA.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctorB.user.id))
+      )[0]!.email,
     );
 
     const aBlock = await request(app.getHttpServer())
@@ -296,16 +419,32 @@ describe('Doctors (e2e)', () => {
 
   it('exposes a doctor weekly schedule to any authenticated user', async () => {
     const doctor = await registerUser(app, 'doctor', 'Dr Public Schedule');
-    const patient = await registerUser(app, 'patient', 'Patient Schedule Viewer');
+    const patient = await registerUser(
+      app,
+      'patient',
+      'Patient Schedule Viewer',
+    );
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctor.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
     );
 
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctor.token}`)
-      .send({ entries: [{ dayOfWeek: 2, startTime: '09:00', endTime: '13:00' }] })
+      .send({
+        entries: [{ dayOfWeek: 2, startTime: '09:00', endTime: '13:00' }],
+      })
       .expect(200);
 
     const res = await request(app.getHttpServer())
@@ -313,7 +452,11 @@ describe('Doctors (e2e)', () => {
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
     expect(res.body).toHaveLength(1);
-    expect(res.body[0]).toMatchObject({ dayOfWeek: 2, startTime: '09:00', endTime: '13:00' });
+    expect(res.body[0]).toMatchObject({
+      dayOfWeek: 2,
+      startTime: '09:00',
+      endTime: '13:00',
+    });
 
     await request(app.getHttpServer())
       .get(`/doctors/${doctor.user.id}/schedule`)
@@ -329,14 +472,26 @@ describe('Doctors (e2e)', () => {
     const doctor = await registerUser(app, 'doctor', 'Dr My Appointments');
     const patient = await registerUser(app, 'patient', 'Patient Booker');
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctor.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
     );
 
     const tomorrow = new Date(Date.now() + 86_400_000);
     const day = tomorrow.toISOString().slice(0, 10);
     const weekday = tomorrow.getUTCDay();
-    const nextDay = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    const nextDay = new Date(Date.now() + 2 * 86_400_000)
+      .toISOString()
+      .slice(0, 10);
     const nextWeekday = new Date(Date.now() + 2 * 86_400_000).getUTCDay();
 
     await request(app.getHttpServer())
@@ -399,6 +554,8 @@ describe('Doctors (e2e)', () => {
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(403);
 
-    await db.delete(appointments).where(eq(appointments.patientId, patient.user.id));
+    await db
+      .delete(appointments)
+      .where(eq(appointments.patientId, patient.user.id));
   });
 });

@@ -11,20 +11,26 @@ describe('resolveBookableSlot', () => {
   ];
 
   it('resolves an exact grid start with matching duration', () => {
-    expect(resolveBookableSlot('2026-08-23T10:30:00.000Z', slots, durationMin)).toEqual(
-      slots[1],
-    );
+    expect(
+      resolveBookableSlot('2026-08-23T10:30:00.000Z', slots, durationMin),
+    ).toEqual(slots[1]);
   });
 
   it('rejects an off-grid start', () => {
-    expect(resolveBookableSlot('2026-08-23T10:07:00.000Z', slots, durationMin)).toBeNull();
+    expect(
+      resolveBookableSlot('2026-08-23T10:07:00.000Z', slots, durationMin),
+    ).toBeNull();
   });
 
   it('rejects a start that is not in the available list', () => {
-    expect(resolveBookableSlot('2026-08-23T14:00:00.000Z', slots, durationMin)).toBeNull();
+    expect(
+      resolveBookableSlot('2026-08-23T14:00:00.000Z', slots, durationMin),
+    ).toBeNull();
   });
 
   it('rejects a start whose end does not match the requested duration', () => {
-    expect(resolveBookableSlot('2026-08-23T10:30:00.000Z', slots, 60)).toBeNull();
+    expect(
+      resolveBookableSlot('2026-08-23T10:30:00.000Z', slots, 60),
+    ).toBeNull();
   });
 });

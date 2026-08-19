@@ -20,7 +20,10 @@ export const schedulesRelations = relations(schedules, ({ one }) => ({
 }));
 
 export const blockedSlotsRelations = relations(blockedSlots, ({ one }) => ({
-  doctor: one(users, { fields: [blockedSlots.doctorId], references: [users.id] }),
+  doctor: one(users, {
+    fields: [blockedSlots.doctorId],
+    references: [users.id],
+  }),
 }));
 
 export const appointmentsRelations = relations(appointments, ({ one }) => ({
@@ -37,7 +40,10 @@ export const appointmentsRelations = relations(appointments, ({ one }) => ({
 }));
 
 export const waitingListRelations = relations(waitingList, ({ one }) => ({
-  doctor: one(users, { fields: [waitingList.doctorId], references: [users.id] }),
+  doctor: one(users, {
+    fields: [waitingList.doctorId],
+    references: [users.id],
+  }),
   patient: one(users, {
     relationName: 'patient',
     fields: [waitingList.patientId],

@@ -23,7 +23,9 @@ export class WaitlistProcessor extends WorkerHost {
     if (job.name === WAITLIST_SWEEP_JOB) {
       logJobRun(this.logger, WAITLIST_QUEUE, job, 'start (sweep)');
       const expired = await this.waitlist.sweep();
-      logJobRun(this.logger, WAITLIST_QUEUE, job, 'sweep done', { expiredCount: expired });
+      logJobRun(this.logger, WAITLIST_QUEUE, job, 'sweep done', {
+        expiredCount: expired,
+      });
       return;
     }
     if (job.name === WAITLIST_PROCESS_JOB) {
@@ -31,12 +33,21 @@ export class WaitlistProcessor extends WorkerHost {
         doctorId: job.data.doctorId,
         slotStart: job.data.slotStart,
       });
-      const offered = await this.waitlist.claimNext(job.data.doctorId, new Date(job.data.slotStart));
-      logJobRun(this.logger, WAITLIST_QUEUE, job, offered ? 'offered' : 'no candidate', {
-        doctorId: job.data.doctorId,
-        slotStart: job.data.slotStart,
-        patientId: offered,
-      });
+      const offered = await this.waitlist.claimNext(
+        job.data.doctorId,
+        new Date(job.data.slotStart),
+      );
+      logJobRun(
+        this.logger,
+        WAITLIST_QUEUE,
+        job,
+        offered ? 'offered' : 'no candidate',
+        {
+          doctorId: job.data.doctorId,
+          slotStart: job.data.slotStart,
+          patientId: offered,
+        },
+      );
     }
   }
 }

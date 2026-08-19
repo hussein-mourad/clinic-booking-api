@@ -11,7 +11,7 @@ import { Public } from '../auth/public.decorator';
 export class HealthService {
   private readonly logger = new Logger(HealthService.name);
 
-  constructor(@Inject(DRIZZLE) private readonly db: Database) { }
+  constructor(@Inject(DRIZZLE) private readonly db: Database) {}
 
   async check() {
     const instance = process.env.INSTANCE_ID ?? `host:${hostname()}`;
@@ -42,4 +42,4 @@ export class HealthController {
   controllers: [HealthController],
   exports: [HealthService],
 })
-export class HealthModule { }
+export class HealthModule {}

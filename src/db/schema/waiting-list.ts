@@ -1,4 +1,10 @@
-import { index, integer, pgTable, serial, timestamp } from 'drizzle-orm/pg-core';
+import {
+  index,
+  integer,
+  pgTable,
+  serial,
+  timestamp,
+} from 'drizzle-orm/pg-core';
 import { users } from './users';
 import { waitlistStatusEnum } from './enums';
 import { createdAt } from './timestamps';

@@ -1,4 +1,11 @@
-import { integer, pgTable, serial, text, uniqueIndex, varchar } from 'drizzle-orm/pg-core';
+import {
+  integer,
+  pgTable,
+  serial,
+  text,
+  uniqueIndex,
+  varchar,
+} from 'drizzle-orm/pg-core';
 import { userRoleEnum } from './enums';
 import { withTimestamps } from './timestamps';
 

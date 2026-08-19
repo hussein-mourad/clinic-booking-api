@@ -36,7 +36,11 @@ describe('Auth (e2e)', () => {
       .expect(201);
 
     expect(res.body.token).toBeDefined();
-    expect(res.body.user).toMatchObject({ email, name: 'Test Patient', role: 'patient' });
+    expect(res.body.user).toMatchObject({
+      email,
+      name: 'Test Patient',
+      role: 'patient',
+    });
   });
 
   it('registers a doctor when role is set', async () => {
@@ -56,8 +60,14 @@ describe('Auth (e2e)', () => {
     emails.push(email);
     const creds = { email, password: 'secret123', name: 'Dup' };
 
-    await request(app.getHttpServer()).post('/auth/register').send(creds).expect(201);
-    await request(app.getHttpServer()).post('/auth/register').send(creds).expect(409);
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send(creds)
+      .expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send(creds)
+      .expect(409);
   });
 
   it('logs in with valid credentials and returns a token', async () => {
@@ -65,7 +75,10 @@ describe('Auth (e2e)', () => {
     emails.push(email);
     const creds = { email, password: 'secret123', name: 'Login' };
 
-    await request(app.getHttpServer()).post('/auth/register').send(creds).expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send(creds)
+      .expect(201);
 
     const res = await request(app.getHttpServer())
       .post('/auth/login')
@@ -81,7 +94,10 @@ describe('Auth (e2e)', () => {
     emails.push(email);
     const creds = { email, password: 'secret123', name: 'BadPW' };
 
-    await request(app.getHttpServer()).post('/auth/register').send(creds).expect(201);
+    await request(app.getHttpServer())
+      .post('/auth/register')
+      .send(creds)
+      .expect(201);
 
     await request(app.getHttpServer())
       .post('/auth/login')

@@ -9,4 +9,5 @@ export interface ReminderJobData {
 }
 
 /** Deterministic jobId => re-enqueue/retry can never create a duplicate reminder. */
-export const reminderJobId = (appointmentId: number) => `reminder-${appointmentId}`;
+export const reminderJobId = (appointmentId: number) =>
+  `reminder-${appointmentId}`;

@@ -7,19 +7,28 @@ import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
 import type { Database } from '../src/db/database.module';
 import { appointments, users } from '../src/db';
 
-async function registerUser(app: INestApplication, role: 'patient' | 'doctor', name: string) {
+async function registerUser(
+  app: INestApplication,
+  role: 'patient' | 'doctor',
+  name: string,
+) {
   const email = `${role}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;
   const res = await request(app.getHttpServer())
     .post('/auth/register')
     .send({ email, password: 'secret123', name, role })
     .expect(201);
-  return { token: res.body.token as string, user: res.body.user as { id: number } };
+  return {
+    token: res.body.token as string,
+    user: res.body.user as { id: number },
+  };
 }
 
 /** A date N days from today whose weekday is in 0..4 (Sun-Thu). */
 function nextWorkingDay(offsetDays: number): string {
   const start = new Date(Date.now() + offsetDays * 86_400_000);
-  const d = new Date(Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()));
+  const d = new Date(
+    Date.UTC(start.getUTCFullYear(), start.getUTCMonth(), start.getUTCDate()),
+  );
   while (d.getUTCDay() > 4) d.setUTCDate(d.getUTCDate() + 1);
   return d.toISOString().slice(0, 10);
 }
@@ -44,7 +53,9 @@ describe('Appointments (e2e)', () => {
         .limit(1);
       if (user) {
         await db.delete(appointments).where(eq(appointments.doctorId, user.id));
-        await db.delete(appointments).where(eq(appointments.patientId, user.id));
+        await db
+          .delete(appointments)
+          .where(eq(appointments.patientId, user.id));
         await db.delete(users).where(eq(users.id, user.id));
       }
     }
@@ -57,9 +68,24 @@ describe('Appointments (e2e)', () => {
     const patient = await registerUser(app, 'patient', 'Appt Patient');
     const other = await registerUser(app, 'patient', 'Appt Rival');
     emails.push(
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, doctor.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, patient.user.id)))[0]!.email,
-      (await db.select({ email: users.email }).from(users).where(eq(users.id, other.user.id)))[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, doctor.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, patient.user.id))
+      )[0]!.email,
+      (
+        await db
+          .select({ email: users.email })
+          .from(users)
+          .where(eq(users.id, other.user.id))
+      )[0]!.email,
     );
 
     const day = nextWorkingDay(2);
@@ -127,21 +153,27 @@ describe('Appointments (e2e)', () => {
       .get('/appointments/me')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
-    expect(allMine.body.map((a: { id: number }) => a.id)).toContain(completed.body.id);
+    expect(allMine.body.map((a: { id: number }) => a.id)).toContain(
+      completed.body.id,
+    );
 
     // status=completed retrieves only completed appointments.
     const historyMine = await request(app.getHttpServer())
       .get('/appointments/me?status=completed')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
-    expect(historyMine.body.map((a: { id: number }) => a.id)).toContain(completed.body.id);
+    expect(historyMine.body.map((a: { id: number }) => a.id)).toContain(
+      completed.body.id,
+    );
 
     // status=scheduled excludes it.
     const scheduledMine = await request(app.getHttpServer())
       .get('/appointments/me?status=scheduled')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
-    expect(scheduledMine.body.map((a: { id: number }) => a.id)).not.toContain(completed.body.id);
+    expect(scheduledMine.body.map((a: { id: number }) => a.id)).not.toContain(
+      completed.body.id,
+    );
   });
 
   it('rejects a second booking for the same slot with 409', async () => {
@@ -162,7 +194,9 @@ describe('Appointments (e2e)', () => {
 
   it('returns 400 for a slot that is not available', async () => {
     const { doctor, patient, start } = await makeDoctorAndSlot();
-    const offGrid = new Date(new Date(start).getTime() + 7 * 60_000).toISOString();
+    const offGrid = new Date(
+      new Date(start).getTime() + 7 * 60_000,
+    ).toISOString();
 
     await request(app.getHttpServer())
       .post('/appointments')
@@ -175,7 +209,12 @@ describe('Appointments (e2e)', () => {
     const { doctor, patient } = await makeDoctorAndSlot();
     const saturday = nextWorkingDay(2);
     const day = new Date(`${saturday}T00:00:00Z`).getUTCDay();
-    const sat = day > 4 ? saturday : new Date(new Date(`${saturday}T00:00:00Z`).getTime() + 4 * 86_400_000).toISOString().slice(0, 10);
+    const sat =
+      day > 4
+        ? saturday
+        : new Date(new Date(`${saturday}T00:00:00Z`).getTime() + 4 * 86_400_000)
+            .toISOString()
+            .slice(0, 10);
 
     await request(app.getHttpServer())
       .post('/appointments')
