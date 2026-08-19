@@ -70,12 +70,12 @@ export class DoctorsController {
     return this.doctors.getProfile(user.sub);
   }
 
-  @Get(':id/analytics')
-  @ApiOperation({ summary: 'Monthly analytics for a doctor (pure SQL aggregation)' })
+  @Get('me/analytics')
+  @ApiOperation({ summary: 'Monthly analytics for the current doctor (pure SQL aggregation)' })
   @ApiResponse({ status: 200, description: 'Monthly metrics' })
   @ApiResponse({ status: 404, description: 'Doctor not found' })
-  analytics(@Param('id', ParseIntPipe) id: number, @Query() query: AnalyticsQuery) {
-    return this.doctors.getAnalytics(id, query.month);
+  analytics(@Query() query: AnalyticsQuery, @CurrentUser() user: JwtPayload) {
+    return this.doctors.getAnalytics(user.sub, query.month);
   }
 
   @Put('me/schedule')

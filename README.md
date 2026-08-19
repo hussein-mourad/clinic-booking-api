@@ -50,7 +50,7 @@ POST   /auth/login                             any
 
 GET    /doctors                                any authenticated
 GET    /doctors/:id/slots?from&to              any authenticated   (availability, on-the-fly)
-GET    /doctors/:id/analytics?month=YYYY-MM    doctor             (pure-SQL aggregates)
+GET    /doctors/me/analytics?month=YYYY-MM    doctor             (pure-SQL aggregates, own data only)
 PUT    /doctors/me/schedule                    doctor
 GET    /doctors/me/schedule                    doctor
 POST   /doctors/me/blocks                      doctor
@@ -170,9 +170,10 @@ npm run proof                 # same proof against the live API
   slot math and analytics.
 - **Availability computed with `generate_series`** rather than a materialized slot table —
   no rollover jobs, always consistent with current schedule/blocks.
-- **Analytics is pure SQL** (`GET /doctors/:id/analytics`): totals, cancellation rate,
-  peak booking hour via `mode()`, and utilization (`booked_minutes / scheduled_minutes −
-  blocks`) are all aggregated in one query; no rows are pulled into JS.
+- **Analytics is pure SQL** (`GET /doctors/me/analytics`, current doctor only): totals,
+  cancellation rate, peak booking hour via `mode()`, and utilization
+  (`booked_minutes / scheduled_minutes − blocks`) are all aggregated in one query; no rows
+  are pulled into JS.
 - **Schema migrations only** (`drizzle/`, applied by a script on boot). No `synchronize`.
 
 ---
@@ -180,7 +181,6 @@ npm run proof                 # same proof against the live API
 ## Future work
 
 - Real email/SMS/WebSocket delivery for notifications instead of `notifications` rows.
-- Doctor authentication could restrict analytics to the doctor's own id (`ownership` check).
 - Paginate `GET /appointments/me` and add date-range filters.
 - Add Git SHA/distributed trace headers to the reminder/waitlist processors for observability.
 - Extend the waitlist with position jumps / priority (e.g., VIP patients) if the clinic wants

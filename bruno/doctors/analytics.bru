@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/doctors/{{doctorId}}/analytics?month=2026-08
+  url: {{baseUrl}}/doctors/me/analytics?month=2026-08
   body: none
   auth: bearer
 }
@@ -23,6 +23,6 @@ query {
 }
 
 docs {
-  Monthly analytics for a doctor, aggregated entirely in SQL (doctor role).
+  Monthly analytics for the current doctor, aggregated entirely in SQL (doctor role).
   Returns total_appointments, cancellation_rate, peak_booking_hours and avg_utilization.
 }

@@ -113,7 +113,7 @@ describe('Doctor analytics (e2e)', () => {
       .expect(200);
 
     const res = await request(app.getHttpServer())
-      .get(`/doctors/${doctor.user.id}/analytics?month=${month}`)
+      .get(`/doctors/me/analytics?month=${month}`)
       .set('Authorization', `Bearer ${doctor.token}`)
       .expect(200);
 
@@ -129,29 +129,24 @@ describe('Doctor analytics (e2e)', () => {
     expect(Math.abs(res.body.avg_utilization - expectedUtil)).toBeLessThan(0.0001);
   }, 30_000);
 
-  it('blocks non-doctors and unknown doctors, and validates month format', async () => {
+  it('blocks non-doctors and validates month format', async () => {
     const doctor = await registerUser(app, 'doctor');
     const patient = await registerUser(app, 'patient');
     await track(doctor.user);
     await track(patient.user);
 
     await request(app.getHttpServer())
-      .get(`/doctors/${doctor.user.id}/analytics?month=2026-08`)
+      .get('/doctors/me/analytics?month=2026-08')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(403);
 
     await request(app.getHttpServer())
-      .get('/doctors/999999999/analytics?month=2026-08')
-      .set('Authorization', `Bearer ${doctor.token}`)
-      .expect(404);
-
-    await request(app.getHttpServer())
-      .get(`/doctors/${doctor.user.id}/analytics?month=2026-13`)
+      .get('/doctors/me/analytics?month=2026-13')
       .set('Authorization', `Bearer ${doctor.token}`)
       .expect(400);
 
     await request(app.getHttpServer())
-      .get(`/doctors/${doctor.user.id}/analytics`)
+      .get('/doctors/me/analytics')
       .set('Authorization', `Bearer ${doctor.token}`)
       .expect(400);
   });
