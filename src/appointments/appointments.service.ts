@@ -40,11 +40,9 @@ export class AppointmentsService {
   constructor(
     @Inject(DRIZZLE) private readonly db: Database,
     private readonly doctors: DoctorsService,
-    @InjectQueue(REMINDERS_QUEUE)
-    private readonly reminders: Queue<ReminderJobData>,
-    @InjectQueue(WAITLIST_QUEUE)
-    private readonly waitlistQueue: Queue<WaitlistProcessData>,
-  ) { }
+    @InjectQueue(REMINDERS_QUEUE) private readonly reminders: Queue<ReminderJobData>,
+    @InjectQueue(WAITLIST_QUEUE) private readonly waitlistQueue: Queue<WaitlistProcessData>,
+  ) {}
 
   async book(patientId: number, dto: BookDto) {
     const [doctor] = await this.db
@@ -58,16 +56,8 @@ export class AppointmentsService {
     // Uses the grid minus blocks (bookings ignored) so an already-taken but
     // legitimate slot flows to the guard and returns 409, not 400.
     const day = new Date(dto.startTime).toISOString().slice(0, 10);
-    const available = await this.doctors.getSchedulableSlots(
-      dto.doctorId,
-      day,
-      day,
-    );
-    const target = resolveBookableSlot(
-      dto.startTime,
-      available,
-      doctor.slotDurationMin,
-    );
+    const available = await this.doctors.getSchedulableSlots(dto.doctorId, day, day);
+    const target = resolveBookableSlot(dto.startTime, available, doctor.slotDurationMin);
     if (!target) throw new BadRequestException('Slot is not available');
 
     const [appointment] = await this.db
@@ -113,7 +103,8 @@ export class AppointmentsService {
     } catch (err) {
       // Booking is primary; a queue outage must not fail an accepted booking.
       this.logger.error(
-        `failed to enqueue reminder for appointment ${appointment.id}: ${(err as Error).message ?? err
+        `failed to enqueue reminder for appointment ${appointment.id}: ${
+          (err as Error).message ?? err
         }`,
       );
     }
@@ -126,7 +117,7 @@ export class AppointmentsService {
       .where(
         and(
           eq(appointments.patientId, patientId),
-          status ? eq(appointments.status, status) : eq(appointments.status, 'scheduled'),
+          status ? eq(appointments.status, status) : undefined,
         ),
       )
       .orderBy(asc(appointments.startTime));
@@ -136,22 +127,14 @@ export class AppointmentsService {
     const [appointment] = await this.db
       .select()
       .from(appointments)
-      .where(
-        and(
-          eq(appointments.id, appointmentId),
-          eq(appointments.patientId, patientId),
-        ),
-      )
+      .where(and(eq(appointments.id, appointmentId), eq(appointments.patientId, patientId)))
       .limit(1);
     if (!appointment) throw new NotFoundException('Appointment not found');
     if (appointment.status !== 'scheduled') {
       throw new ConflictException('Appointment is no longer active');
     }
 
-    if (
-      new Date(appointment.startTime).getTime() - Date.now() <
-      CANCEL_WINDOW_MS
-    ) {
+    if (new Date(appointment.startTime).getTime() - Date.now() < CANCEL_WINDOW_MS) {
       throw new UnprocessableEntityException(
         'Cannot cancel within 2 hours of the appointment start',
       );
@@ -172,10 +155,7 @@ export class AppointmentsService {
     try {
       await this.reminders.remove(reminderJobId(appointmentId));
     } catch (err) {
-      this.logger.error(
-        `failed to remove reminder for appointment ${appointmentId}`,
-        err,
-      );
+      this.logger.error(`failed to remove reminder for appointment ${appointmentId}`, err);
     }
 
     // The slot just freed up: have the waitlist queue recurse to the next FIFO
@@ -194,10 +174,7 @@ export class AppointmentsService {
         },
       );
     } catch (err) {
-      this.logger.error(
-        `failed to enqueue waitlist processing for appointment ${appointmentId}`,
-        err,
-      );
+      this.logger.error(`failed to enqueue waitlist processing for appointment ${appointmentId}`, err);
     }
 
     return cancelled!;
