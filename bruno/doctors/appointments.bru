@@ -5,9 +5,14 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/doctors/me/appointments?from=2026-08-23&to=2026-08-29
+  url: {{baseUrl}}/doctors/me/appointments?from=2026-08-10&to=2026-08-11
   body: none
   auth: bearer
+}
+
+params:query {
+  from: 2026-08-10
+  to: 2026-08-11
 }
 
 headers {
@@ -16,11 +21,6 @@ headers {
 
 auth:bearer {
   token: {{authToken}}
-}
-
-query {
-  from: 2026-08-23
-  to: 2026-08-29
 }
 
 docs {
