@@ -30,7 +30,6 @@ import { SetSlotDurationDto } from './dto/set-slot-duration.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
 
-@ApiTags('doctors')
 @ApiBearerAuth()
 @Controller('doctors')
 @Roles('doctor')
@@ -38,6 +37,7 @@ export class DoctorsController {
   constructor(private readonly doctors: DoctorsService) {}
 
   @Get()
+  @ApiTags('Doctors')
   @Roles('patient', 'doctor')
   @ApiOperation({ summary: 'List doctors' })
   @ApiResponse({ status: 200, description: 'Array of doctors' })
@@ -46,6 +46,7 @@ export class DoctorsController {
   }
 
   @Get(':id/slots')
+  @ApiTags('Doctors · Availability')
   @Roles('patient', 'doctor')
   @ApiOperation({ summary: 'List available appointment slots for a doctor' })
   @ApiResponse({ status: 200, description: 'Array of available slots' })
@@ -55,12 +56,14 @@ export class DoctorsController {
   }
 
   @Get('me/schedule')
+  @ApiTags('Doctors · Schedule')
   @ApiOperation({ summary: "Get the current doctor's weekly schedule" })
   getSchedule(@CurrentUser() user: JwtPayload) {
     return this.doctors.getSchedule(user.sub);
   }
 
   @Get(':id/schedule')
+  @ApiTags('Doctors · Schedule')
   @Roles('patient', 'doctor')
   @ApiOperation({ summary: 'View any doctor weekly schedule' })
   @ApiResponse({ status: 200, description: 'Weekly schedule of the doctor' })
@@ -70,6 +73,7 @@ export class DoctorsController {
   }
 
   @Get('me')
+  @ApiTags('Doctors · Profile')
   @ApiOperation({
     summary: "Get the current doctor's profile and slot duration",
   })
@@ -79,6 +83,7 @@ export class DoctorsController {
   }
 
   @Get('me/appointments')
+  @ApiTags('Doctors · Appointments')
   @ApiOperation({ summary: "List the current doctor's booked appointments" })
   @ApiResponse({
     status: 200,
@@ -92,6 +97,7 @@ export class DoctorsController {
   }
 
   @Get('me/analytics')
+  @ApiTags('Doctors · Analytics')
   @ApiOperation({
     summary: 'Monthly analytics for the current doctor (pure SQL aggregation)',
   })
@@ -102,6 +108,7 @@ export class DoctorsController {
   }
 
   @Put('me/schedule')
+  @ApiTags('Doctors · Schedule')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: "Replace the current doctor's weekly schedule" })
   @ApiResponse({ status: 200, description: 'Schedule updated' })
@@ -113,6 +120,7 @@ export class DoctorsController {
   }
 
   @Post('me/blocks')
+  @ApiTags('Doctors · Blocks')
   @HttpCode(HttpStatus.CREATED)
   @ApiOperation({
     summary: 'Block a date or time range for the current doctor',
@@ -123,6 +131,7 @@ export class DoctorsController {
   }
 
   @Get('me/blocks')
+  @ApiTags('Doctors · Blocks')
   @ApiOperation({
     summary: 'List blocked dates/time ranges for the current doctor',
   })
@@ -132,6 +141,7 @@ export class DoctorsController {
   }
 
   @Get('me/blocks/:blockId')
+  @ApiTags('Doctors · Blocks')
   @ApiOperation({ summary: 'Get a single blocked date/time range' })
   @ApiResponse({ status: 200, description: 'Blocked slot' })
   @ApiResponse({ status: 404, description: 'Block not found' })
@@ -143,6 +153,7 @@ export class DoctorsController {
   }
 
   @Patch('me/blocks/:blockId')
+  @ApiTags('Doctors · Blocks')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Update a blocked date and/or time range' })
   @ApiResponse({ status: 200, description: 'Block updated' })
@@ -156,6 +167,7 @@ export class DoctorsController {
   }
 
   @Delete('me/blocks/:blockId')
+  @ApiTags('Doctors · Blocks')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Remove a blocked date/time range' })
   @ApiResponse({ status: 200, description: 'Block removed' })
@@ -168,6 +180,7 @@ export class DoctorsController {
   }
 
   @Patch('me')
+  @ApiTags('Doctors · Profile')
   @HttpCode(HttpStatus.OK)
   @ApiOperation({
     summary: 'Set the current doctor slot duration (15, 30 or 60 minutes)',

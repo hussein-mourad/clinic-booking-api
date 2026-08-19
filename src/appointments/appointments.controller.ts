@@ -23,7 +23,7 @@ import { AppointmentsService } from './appointments.service';
 import { BookDto } from './dto/book.dto';
 import { MineQuery } from './dto/mine-query.dto';
 
-@ApiTags('appointments')
+@ApiTags('Appointments')
 @ApiBearerAuth()
 @Controller('appointments')
 @Roles('patient')

@@ -19,7 +19,7 @@ import { Roles } from '../auth/roles.decorator';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';
 import { WaitlistService } from './waitlist.service';
 
-@ApiTags('waitlist')
+@ApiTags('Waiting list')
 @ApiBearerAuth()
 @Controller('waitlist')
 @Roles('patient')

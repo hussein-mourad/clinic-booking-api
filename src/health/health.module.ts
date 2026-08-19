@@ -25,7 +25,7 @@ export class HealthService {
   }
 }
 
-@ApiTags('health')
+@ApiTags('Health')
 @Controller('health')
 export class HealthController {
   constructor(private readonly health: HealthService) {}
