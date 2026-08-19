@@ -18,7 +18,7 @@ NestJS (Express) + PostgreSQL 16 + Redis 7 (BullMQ) + Drizzle ORM + JWT. PLAN.md
 - Concurrency guard at the **DB level**: partial unique index `uq_appt_active_slot` on `appointments(doctor_id, start_time) WHERE status='scheduled'` + `INSERT ... ON CONFLICT DO NOTHING RETURNING`; no return row ⇒ 409. No in-app locks/mutexes (app is horizontally scaled).
 - Analytics (`GET /doctors/:id/analytics?month=YYYY-MM`) must aggregate **in SQL** — never load rows into JS and compute there.
 - Reminders and waitlist-processing are **BullMQ jobs that must be retry-idempotent** (deterministic `jobId`s; guarded `WHERE ... rowCount==1` claims).
-- Deliverables: `docker-compose.yml` (app + Postgres + Redis, one-command boot); concurrency proof `scripts/` + `npm run test:concurrency` (N=25 same-slot bookings ⇒ exactly one 201, rest 409); README documenting concurrency approach + alternatives, index rationale, waiting-list assumptions, and an AI-usage section.
+- Deliverables: `docker-compose.yml` (app + Postgres + Redis, one-command boot); concurrency proof `scripts/` + `bun run test:concurrency` (N=25 same-slot bookings ⇒ exactly one 201, rest 409); README documenting concurrency approach + alternatives, index rationale, waiting-list assumptions, and an AI-usage section.
 - Meaningful **incremental commit history** matching PLAN.md §16 milestones — never a single squashed dump.
 
 ## Key decisions already made in PLAN.md

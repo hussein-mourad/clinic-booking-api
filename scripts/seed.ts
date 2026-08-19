@@ -6,7 +6,7 @@
  * the public API (the same path a real client uses). Idempotent: re-running
  * reuses existing accounts.
  *
- * Usage: npm run seed   (point API_URL elsewhere if needed)
+ * Usage: bun run seed   (point API_URL elsewhere if needed)
  */
 
 const API = process.env.API_URL ?? 'http://localhost:3000';

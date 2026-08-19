@@ -11,7 +11,7 @@
  * Idempotent: re-running wipes any previously seeded @clinic.com rows
  * (in FK-safe order) and reseeds with fresh data.
  *
- * Usage: npm run seed:full
+ * Usage: bun run seed:full
  */
 
 import 'dotenv/config';

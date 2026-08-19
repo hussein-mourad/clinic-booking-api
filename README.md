@@ -11,34 +11,34 @@ with DB-level concurrency safety, BullMQ background jobs, and SQL-aggregated ana
 
 ```bash
 # one command boots everything (Postgres + Redis + API) with migrations on startup
-docker compose up --build
+bun run prod
 # API:  http://localhost:3000   Swagger: http://localhost:3000/api
 ```
 
 Fast local development without the containerized API:
 
 ```bash
-npm install
-npm run dev:infra        # Postgres + Redis only (Docker)
+bun install
+bun run dev:infra        # Postgres + Redis only (Docker)
 cp .env.example .env     # defaults match the compose services
-npm run dev              # bun watch server on :3000
-npm run db:migrate       # apply latest SQL migration alphabetically
+bun run dev              # bun watch server on :3000
+bun run db:migrate       # apply latest SQL migration alphabetically
 ```
 
-Then `npm run seed` to create a demo doctor (Sun–Thu 10:00–16:00, 30-min slots) and
+Then `bun run seed` to create a demo doctor (Sun–Thu 10:00–16:00, 30-min slots) and
 3 patients, printing working tokens for immediate API use.
 
 ---
 
 ## Configuration (`.env`)
 
-| Var              | Default                                          | Purpose                        |
-| ---------------- | ------------------------------------------------ | ------------------------------ |
-| `DATABASE_URL`   | `postgres://clinic:clinic@localhost:5432/clinic` | Postgres connection            |
-| `REDIS_HOST`     | `localhost`                                      | BullMQ broker                  |
-| `REDIS_PORT`     | `6379`                                           | BullMQ broker                  |
-| `JWT_SECRET`     | `dev-only-secret-change-me`                      | HS256 signing key              |
-| `JWT_EXPIRES_IN` | `1d`                                             | Token lifetime                 |
+| Var              | Default                                          | Purpose             |
+| ---------------- | ------------------------------------------------ | ------------------- |
+| `DATABASE_URL`   | `postgres://clinic:clinic@localhost:5432/clinic` | Postgres connection |
+| `REDIS_HOST`     | `localhost`                                      | BullMQ broker       |
+| `REDIS_PORT`     | `6379`                                           | BullMQ broker       |
+| `JWT_SECRET`     | `dev-only-secret-change-me`                      | HS256 signing key   |
+| `JWT_EXPIRES_IN` | `1d`                                             | Token lifetime      |
 
 ---
 
@@ -90,34 +90,34 @@ the database level:
 ### Proof
 
 ```bash
-npm run test:concurrency    # e2e: N=25 simultaneous same-slot bookings => 1x201, 24x409
-npm run proof               # same against the LIVE API (docker compose up first)
+bun run test:concurrency    # e2e: N=25 simultaneous same-slot bookings => 1x201, 24x409
+bun run proof               # same against the LIVE API (docker compose up first)
 ```
 
 Last run: `N=25 same-slot bookings -> 1 x201, 24 x409`.
 
 ### Alternatives considered (and why not chosen)
 
-| Approach                    | Why rejected                                                                 |
-| --------------------------- | ---------------------------------------------------------------------------- |
-| In-app `Semaphore`/`mutex`  | Only works within one process; breaks on multiple replicas.                  |
-| Redis SETNX lock            | Adds a coordination dependency and a TTL/lease window that can still allow a second writer right after expiry; DB index is simpler and race-free. |
+| Approach                              | Why rejected                                                                                                                                                           |
+| ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| In-app `Semaphore`/`mutex`            | Only works within one process; breaks on multiple replicas.                                                                                                            |
+| Redis SETNX lock                      | Adds a coordination dependency and a TTL/lease window that can still allow a second writer right after expiry; DB index is simpler and race-free.                      |
 | `SELECT ... FOR UPDATE` of a slot row | Requires a materialized slots table with row-level locking; adds rollover/maintenance jobs. Conditional insert on the computed-on-the-fly grid avoids the extra table. |
-| Application-level check-then-insert | Classic TOCTOU — two requests can both read "free" and both insert. |
+| Application-level check-then-insert   | Classic TOCTOU — two requests can both read "free" and both insert.                                                                                                    |
 
 ---
 
 ## Index rationale
 
-| Index                                                        | Purpose                                                                                                 |
-| ------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------- |
-| `users.email` unique                                         | Login lookup + registration uniqueness.                                                                  |
-| `schedules(doctor_id, day_of_week)` unique                   | One schedule entry per doctor/weekday; uniqueness is also a data-integrity rule.                         |
-| `blocked_slots(doctor_id, block_date)`                       | Block subtraction in the availability query and in analytics `scheduled_minutes`.                        |
-| `appointments(doctor_id, start_time)`                        | Slot anti-join for availability + active-slot listing.                                                   |
-| partial unique `uq_appt_active_slot` on `(doctor_id, start_time) WHERE status='scheduled'` | **Concurrency guard** — the double-booking shield; backs the active-slot scan. |
-| `appointments(patient_id, start_time)`                       | "My appointments" and cancel lookups.                                                                    |
-| `waiting_list(doctor_id, slot_start)`                        | FIFO queue claims on cancellation and offer-expiry sweeps.                                               |
+| Index                                                                                      | Purpose                                                                           |
+| ------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------- |
+| `users.email` unique                                                                       | Login lookup + registration uniqueness.                                           |
+| `schedules(doctor_id, day_of_week)` unique                                                 | One schedule entry per doctor/weekday; uniqueness is also a data-integrity rule.  |
+| `blocked_slots(doctor_id, block_date)`                                                     | Block subtraction in the availability query and in analytics `scheduled_minutes`. |
+| `appointments(doctor_id, start_time)`                                                      | Slot anti-join for availability + active-slot listing.                            |
+| partial unique `uq_appt_active_slot` on `(doctor_id, start_time) WHERE status='scheduled'` | **Concurrency guard** — the double-booking shield; backs the active-slot scan.    |
+| `appointments(patient_id, start_time)`                                                     | "My appointments" and cancel lookups.                                             |
+| `waiting_list(doctor_id, slot_start)`                                                      | FIFO queue claims on cancellation and offer-expiry sweeps.                        |
 
 No materialized slot table: availability is computed on the fly from `schedules − blocked_slots − booked`
 via `generate_series`, which stays fast at this scale and avoids window-maintenance jobs.
@@ -146,21 +146,21 @@ via `generate_series`, which stays fast at this scale and avoids window-maintena
 
 ## Background jobs (BullMQ) — idempotency
 
-| Job            | Deterministic `jobId`                  | Guarded re-check on execution                                                              |
-| -------------- | -------------------------------------- | ------------------------------------------------------------------------------------------- |
-| T-24h reminder | `reminder:{appointmentId}`             | Appointment still `scheduled` **and** no reminder row exists yet → exactly one notification. |
-| Waitlist claim | `waitlist:{appointmentId}`             | `UPDATE … rowCount==1` → unique offer even under retries/races.                              |
-| Offer sweep    | BullMQ repeatable scheduler (5 min)    | Earlier sweep already flipped the entry to `expired` → next candidate.                       |
+| Job            | Deterministic `jobId`               | Guarded re-check on execution                                                                |
+| -------------- | ----------------------------------- | -------------------------------------------------------------------------------------------- |
+| T-24h reminder | `reminder:{appointmentId}`          | Appointment still `scheduled` **and** no reminder row exists yet → exactly one notification. |
+| Waitlist claim | `waitlist:{appointmentId}`          | `UPDATE … rowCount==1` → unique offer even under retries/races.                              |
+| Offer sweep    | BullMQ repeatable scheduler (5 min) | Earlier sweep already flipped the entry to `expired` → next candidate.                       |
 
 ---
 
 ## Testing
 
 ```bash
-npm test                      # unit tests (slot grid, booking resolution)
-npm run test:e2e              # full e2e suite (auth, doctors, slots, booking, reminders, waitlist, analytics, concurrency)
-npm run test:concurrency      # N=25 same-slot booking proof (1 x201, 24 x409)
-npm run proof                 # same proof against the live API
+bun test                      # unit tests (slot grid, booking resolution)
+bun run test:e2e              # full e2e suite (auth, doctors, slots, booking, reminders, waitlist, analytics, concurrency)
+bun run test:concurrency      # N=25 same-slot booking proof (1 x201, 24 x409)
+bun run proof                 # same proof against the live API
 ```
 
 ---

@@ -195,7 +195,7 @@ POST   /waiting-list/:id/accept                   (patient)
 
 - **Unit:** slot validation, cancel-window rule, offer-claim logic.
 - **e2e (supertest):** register/login, book, cancel, full waitlist scenario end-to-end.
-- **Concurrency proof:** `npm run test:concurrency` — fires N=25 simultaneous booking
+- **Concurrency proof:** `bun run test:concurrency` — fires N=25 simultaneous booking
   requests at the same `(doctor, slot)` and asserts **exactly one 201**, the rest 409.
   Ships as a script in `scripts/` (assessors can run it against the live app) and as a Jest
   test. If time allows, also run it against two API replicas behind the compose load balancer.
