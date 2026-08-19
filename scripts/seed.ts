@@ -10,8 +10,10 @@
  */
 
 const API = process.env.API_URL ?? 'http://localhost:3000';
-export const SEED_DOCTOR_EMAIL = process.env.SEED_DOCTOR_EMAIL ?? 'doctor@example.com';
-export const SEED_DOCTOR_PASSWORD = process.env.SEED_DOCTOR_PASSWORD ?? 'secret123';
+export const SEED_DOCTOR_EMAIL =
+  process.env.SEED_DOCTOR_EMAIL ?? 'doctor@clinic.com';
+export const SEED_DOCTOR_PASSWORD =
+  process.env.SEED_DOCTOR_PASSWORD ?? 'secret123';
 export const SEED_PATIENT_COUNT = Number(process.env.SEED_PATIENT_COUNT ?? 3);
 
 interface AuthResult {
@@ -34,7 +36,10 @@ async function json<T>(
     body: body === undefined ? undefined : JSON.stringify(body),
   });
   const data = (await res.json().catch(() => ({}))) as T & { message?: string };
-  if (!res.ok) throw new Error(`${method} ${path} -> ${res.status}: ${JSON.stringify(data)}`);
+  if (!res.ok)
+    throw new Error(
+      `${method} ${path} -> ${res.status}: ${JSON.stringify(data)}`,
+    );
   return data;
 }
 
@@ -79,7 +84,12 @@ async function main() {
   const patients: AuthResult[] = [];
   for (let i = 0; i < SEED_PATIENT_COUNT; i++) {
     patients.push(
-      await authOrRegister('patient', `patient-${i}@example.com`, 'secret123', `Patient ${i}`),
+      await authOrRegister(
+        'patient',
+        `patient-${i}@clinic.com`,
+        'secret123',
+        `Patient ${i}`,
+      ),
     );
   }
 
@@ -112,8 +122,12 @@ async function main() {
 
   console.log('Seed complete');
   console.log(`  doctor id   = ${doctor.user.id} (${doctor.user.email})`);
-  console.log(`  schedule    = ${schedule.length} days, e.g. ${JSON.stringify(schedule[0])}`);
-  console.log(`  slots       = ${slots.length} for ${from}..${to} (first: ${slots[0]?.start ?? '-'})`);
+  console.log(
+    `  schedule    = ${schedule.length} days, e.g. ${JSON.stringify(schedule[0])}`,
+  );
+  console.log(
+    `  slots       = ${slots.length} for ${from}..${to} (first: ${slots[0]?.start ?? '-'})`,
+  );
   console.log(`  doctorToken = ${doctor.token}`);
   console.log(`  patientToken= ${patients[0]!.token}`);
 }
