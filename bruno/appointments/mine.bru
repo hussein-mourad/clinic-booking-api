@@ -5,13 +5,13 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/appointments/me?status=completed
+  url: {{baseUrl}}/appointments/me?status=scheduled
   body: none
   auth: bearer
 }
 
 params:query {
-  status: completed
+  status: scheduled
 }
 
 headers {
@@ -24,6 +24,6 @@ auth:bearer {
 
 docs {
   Lists the current patient's appointments (patient role only).
-  Returns all statuses by default; use ?status=scheduled|cancelled|completed
-  to filter to a single status.
+  Returns scheduled (in-progress) appointments by default; use
+  ?status=scheduled|cancelled|completed to filter freely.
 }
