@@ -17,10 +17,16 @@ x-api: &api
       condition: service_healthy
     redis:
       condition: service_healthy
-    migrate:
-      condition: service_completed_successfully
+    # migrate:
+    #   condition: service_completed_successfully
   healthcheck:
-    test: ["CMD", "bun", "-e", "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"]
+    test:
+      [
+        "CMD",
+        "bun",
+        "-e",
+        "fetch('http://localhost:3000/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))",
+      ]
     interval: 5s
     timeout: 3s
     retries: 12
@@ -64,18 +70,18 @@ services:
     depends_on:
       - redis
 
-  migrate:
-    image: clinic-booking-api:prod
-    build: .
-    environment:
-      <<: *api-env
-    command: ["bun", "dist/db/migrate.js"]
-    depends_on:
-      db:
-        condition: service_healthy
-      redis:
-        condition: service_healthy
-    restart: "no"
+  # migrate:
+  #   image: clinic-booking-api:prod
+  #   build: .
+  #   environment:
+  #     <<: *api-env
+  #   command: ["bun", "dist/db/migrate.js"]
+  #   depends_on:
+  #     db:
+  #       condition: service_healthy
+  #     redis:
+  #       condition: service_healthy
+  #   restart: "no"
 
   api-1:
     <<: *api
