@@ -3,9 +3,9 @@ import { Pool } from 'pg';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { createApp } from '../src/app.factory';
-import { DRIZZLE, DATABASE_POOL } from '../src/database/database.module';
-import type { Database } from '../src/database/database.module';
-import { appointments, notifications, users } from '../src/database/schema';
+import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
+import type { Database } from '../src/db/database.module';
+import { appointments, notifications, users } from '../src/db';
 
 let emailCounter = 0;
 

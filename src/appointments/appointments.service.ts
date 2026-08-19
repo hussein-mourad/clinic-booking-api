@@ -10,9 +10,9 @@ import {
 } from '@nestjs/common';
 import { Queue } from 'bullmq';
 import { and, asc, eq } from 'drizzle-orm';
-import { DRIZZLE } from '../database/database.module';
-import type { Database } from '../database/database.module';
-import { appointments, users } from '../database/schema';
+import { DRIZZLE } from '../db/database.module';
+import type { Database } from '../db/database.module';
+import { appointments, users } from '../db';
 import { DoctorsService } from '../doctors/doctors.service';
 import {
   REMINDER_JOB,

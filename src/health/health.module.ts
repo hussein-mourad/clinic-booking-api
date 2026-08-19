@@ -2,8 +2,8 @@ import { Controller, Get, Injectable, Module } from '@nestjs/common';
 import { sql } from 'drizzle-orm';
 import { Inject, Logger } from '@nestjs/common';
 import { ApiTags } from '@nestjs/swagger';
-import { DRIZZLE } from '../database/database.module';
-import type { Database } from '../database/database.module';
+import { DRIZZLE } from '../db/database.module';
+import type { Database } from '../db/database.module';
 import { Public } from '../auth/public.decorator';
 
 @Injectable()

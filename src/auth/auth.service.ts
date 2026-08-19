@@ -2,9 +2,9 @@ import { ConflictException, Inject, Injectable, UnauthorizedException } from '@n
 import { eq } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
 import { JwtService } from '@nestjs/jwt';
-import { DRIZZLE } from '../database/database.module';
-import type { Database } from '../database/database.module';
-import { users } from '../database/schema';
+import { DRIZZLE } from '../db/database.module';
+import type { Database } from '../db/database.module';
+import { users } from '../db';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import type { JwtPayload } from './jwt-payload';

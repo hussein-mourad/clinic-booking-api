@@ -10,9 +10,9 @@ import {
 import { InjectQueue } from '@nestjs/bullmq';
 import { Queue } from 'bullmq';
 import { and, eq, lt, sql } from 'drizzle-orm';
-import { DRIZZLE } from '../database/database.module';
-import type { Database } from '../database/database.module';
-import { appointments, notifications, users, waitingList } from '../database/schema';
+import { DRIZZLE } from '../db/database.module';
+import type { Database } from '../db/database.module';
+import { appointments, notifications, users, waitingList } from '../db';
 import { DoctorsService } from '../doctors/doctors.service';
 import { resolveBookableSlot } from '../appointments/booking';
 import { JoinWaitlistDto } from './dto/join-waitlist.dto';

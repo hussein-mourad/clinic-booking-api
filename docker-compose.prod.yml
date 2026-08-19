@@ -55,7 +55,7 @@ services:
       JWT_EXPIRES_IN: 1d
     ports:
       - "${PROD_API_PORT:-3001}:3000"
-    command: ["sh", "-c", "bun dist/database/migrate.js && bun run start:prod"]
+    command: ["sh", "-c", "bun dist/db/migrate.js && bun run start:prod"]
 
 volumes:
   pgdata:

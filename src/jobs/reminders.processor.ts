@@ -2,9 +2,9 @@ import { Inject, Logger } from '@nestjs/common';
 import { Processor, WorkerHost } from '@nestjs/bullmq';
 import { Job } from 'bullmq';
 import { and, eq, sql } from 'drizzle-orm';
-import { DRIZZLE } from '../database/database.module';
-import type { Database } from '../database/database.module';
-import { appointments, notifications } from '../database/schema';
+import { DRIZZLE } from '../db/database.module';
+import type { Database } from '../db/database.module';
+import { appointments, notifications } from '../db';
 import { REMINDER_JOB, REMINDERS_QUEUE, ReminderJobData } from './reminders.constants';
 
 /**

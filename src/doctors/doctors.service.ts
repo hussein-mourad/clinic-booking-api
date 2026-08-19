@@ -5,9 +5,9 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { and, asc, eq, gte, lte, sql } from 'drizzle-orm';
-import { DRIZZLE } from '../database/database.module';
-import type { Database } from '../database/database.module';
-import { appointments, blockedSlots, schedules, users } from '../database/schema';
+import { DRIZZLE } from '../db/database.module';
+import type { Database } from '../db/database.module';
+import { appointments, blockedSlots, schedules, users } from '../db';
 import { generateSlots } from './slots.generator';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';

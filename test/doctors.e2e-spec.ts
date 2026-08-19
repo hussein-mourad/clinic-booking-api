@@ -3,9 +3,9 @@ import { Pool } from 'pg';
 import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { createApp } from '../src/app.factory';
-import { DRIZZLE, DATABASE_POOL } from '../src/database/database.module';
-import type { Database } from '../src/database/database.module';
-import { users, appointments, notifications } from '../src/database/schema';
+import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
+import type { Database } from '../src/db/database.module';
+import { users, appointments, notifications } from '../src/db';
 
 async function registerUser(app: INestApplication, role: 'patient' | 'doctor', name: string) {
   const email = `${role}+${Date.now()}-${Math.random().toString(36).slice(2, 8)}@example.com`;

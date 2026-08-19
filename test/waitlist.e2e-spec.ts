@@ -5,9 +5,9 @@ import { eq } from 'drizzle-orm';
 import request from 'supertest';
 import { Queue } from 'bullmq';
 import { createApp } from '../src/app.factory';
-import { DRIZZLE, DATABASE_POOL } from '../src/database/database.module';
-import type { Database } from '../src/database/database.module';
-import { appointments, notifications, users, waitingList } from '../src/database/schema';
+import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
+import type { Database } from '../src/db/database.module';
+import { appointments, notifications, users, waitingList } from '../src/db';
 import { WAITLIST_QUEUE, WAITLIST_SWEEP_JOB } from '../src/waitlist/waitlist.constants';
 
 let emailCounter = 0;

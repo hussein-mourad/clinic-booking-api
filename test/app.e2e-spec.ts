@@ -2,7 +2,7 @@ import { INestApplication } from '@nestjs/common';
 import { Pool } from 'pg';
 import request from 'supertest';
 import { createApp } from '../src/app.factory';
-import { DATABASE_POOL } from '../src/database/database.module';
+import { DATABASE_POOL } from '../src/db/database.module';
 
 describe('App (e2e)', () => {
   let app: INestApplication;

@@ -2,9 +2,9 @@ import { INestApplication } from '@nestjs/common';
 import { Pool } from 'pg';
 import { eq } from 'drizzle-orm';
 import { createApp } from '../src/app.factory';
-import { DRIZZLE, DATABASE_POOL } from '../src/database/database.module';
-import type { Database } from '../src/database/database.module';
-import { appointments, users } from '../src/database/schema';
+import { DRIZZLE, DATABASE_POOL } from '../src/db/database.module';
+import type { Database } from '../src/db/database.module';
+import { appointments, users } from '../src/db';
 
 const N = 25;
 

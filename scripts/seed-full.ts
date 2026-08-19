@@ -19,7 +19,7 @@ import { Pool } from 'pg';
 import { NodePgDatabase, drizzle } from 'drizzle-orm/node-postgres';
 import { and, eq, inArray, like, or } from 'drizzle-orm';
 import * as bcrypt from 'bcryptjs';
-import * as schema from '../src/database/schema';
+import * as schema from '../src/db/schema';
 
 const connectionString = process.env.DATABASE_URL;
 if (!connectionString) {
