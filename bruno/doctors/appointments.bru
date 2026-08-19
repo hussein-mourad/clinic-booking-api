@@ -5,15 +5,25 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/doctors/me/appointments
+  url: {{baseUrl}}/doctors/me/appointments?from=2026-08-23&to=2026-08-29
   body: none
   auth: bearer
+}
+
+headers {
+  Content-Type: application/json
 }
 
 auth:bearer {
   token: {{authToken}}
 }
 
+query {
+  from: 2026-08-23
+  to: 2026-08-29
+}
+
 docs {
   Lists the current doctor booked appointments, including the patient name (doctor role only).
+  Both query params are optional; from/to (YYYY-MM-DD) filter by appointment start date.
 }

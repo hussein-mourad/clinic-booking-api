@@ -20,6 +20,7 @@ import { DoctorsService } from './doctors.service';
 import { AnalyticsQuery } from './dto/analytics-query.dto';
 import { CreateBlockDto } from './dto/create-block.dto';
 import { ListSlotsQuery } from './dto/list-slots-query.dto';
+import { ListAppointmentsQuery } from './dto/list-appointments-query.dto';
 import { SetSlotDurationDto } from './dto/set-slot-duration.dto';
 import { UpdateBlockDto } from './dto/update-block.dto';
 import { UpsertScheduleDto } from './dto/upsert-schedule.dto';
@@ -73,8 +74,8 @@ export class DoctorsController {
   @Get('me/appointments')
   @ApiOperation({ summary: "List the current doctor's booked appointments" })
   @ApiResponse({ status: 200, description: 'Array of appointments with the patient name' })
-  appointments(@CurrentUser() user: JwtPayload) {
-    return this.doctors.listAppointments(user.sub);
+  appointments(@Query() query: ListAppointmentsQuery, @CurrentUser() user: JwtPayload) {
+    return this.doctors.listAppointments(user.sub, query.from, query.to);
   }
 
   @Get('me/analytics')

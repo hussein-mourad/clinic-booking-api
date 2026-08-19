@@ -105,7 +105,7 @@ export class DoctorsService {
     return row;
   }
 
-  async listAppointments(doctorId: number) {
+  async listAppointments(doctorId: number, from?: string, to?: string) {
     return this.db
       .select({
         id: appointments.id,
@@ -119,7 +119,13 @@ export class DoctorsService {
       })
       .from(appointments)
       .innerJoin(users, eq(users.id, appointments.patientId))
-      .where(eq(appointments.doctorId, doctorId))
+      .where(
+        and(
+          eq(appointments.doctorId, doctorId),
+          from ? gte(appointments.startTime, new Date(`${from}T00:00:00Z`)) : undefined,
+          to ? lte(appointments.startTime, new Date(`${to}T23:59:59.999Z`)) : undefined,
+        ),
+      )
       .orderBy(asc(appointments.startTime));
   }
 

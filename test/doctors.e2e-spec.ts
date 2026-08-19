@@ -336,11 +336,18 @@ describe('Doctors (e2e)', () => {
     const tomorrow = new Date(Date.now() + 86_400_000);
     const day = tomorrow.toISOString().slice(0, 10);
     const weekday = tomorrow.getUTCDay();
+    const nextDay = new Date(Date.now() + 2 * 86_400_000).toISOString().slice(0, 10);
+    const nextWeekday = new Date(Date.now() + 2 * 86_400_000).getUTCDay();
 
     await request(app.getHttpServer())
       .put('/doctors/me/schedule')
       .set('Authorization', `Bearer ${doctor.token}`)
-      .send({ entries: [{ dayOfWeek: weekday, startTime: '10:00', endTime: '12:00' }] })
+      .send({
+        entries: [
+          { dayOfWeek: weekday, startTime: '10:00', endTime: '12:00' },
+          { dayOfWeek: nextWeekday, startTime: '10:00', endTime: '12:00' },
+        ],
+      })
       .expect(200);
 
     const booked = await request(app.getHttpServer())
@@ -349,13 +356,19 @@ describe('Doctors (e2e)', () => {
       .send({ doctorId: doctor.user.id, startTime: `${day}T10:00:00.000Z` })
       .expect(201);
 
+    await request(app.getHttpServer())
+      .post('/appointments')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .send({ doctorId: doctor.user.id, startTime: `${nextDay}T10:00:00.000Z` })
+      .expect(201);
+
     const res = await request(app.getHttpServer())
       .get('/doctors/me/appointments')
       .set('Authorization', `Bearer ${doctor.token}`)
       .expect(200);
 
     expect(Array.isArray(res.body)).toBe(true);
-    expect(res.body).toHaveLength(1);
+    expect(res.body).toHaveLength(2);
     expect(res.body[0]).toMatchObject({
       id: booked.body.id,
       patientId: patient.user.id,
@@ -363,11 +376,29 @@ describe('Doctors (e2e)', () => {
       status: 'scheduled',
     });
 
+    const filtered = await request(app.getHttpServer())
+      .get(`/doctors/me/appointments?from=${day}&to=${day}`)
+      .set('Authorization', `Bearer ${doctor.token}`)
+      .expect(200);
+    expect(filtered.body).toHaveLength(1);
+    expect(filtered.body[0].id).toBe(booked.body.id);
+
+    const filteredAll = await request(app.getHttpServer())
+      .get(`/doctors/me/appointments?from=${day}&to=${nextDay}`)
+      .set('Authorization', `Bearer ${doctor.token}`)
+      .expect(200);
+    expect(filteredAll.body).toHaveLength(2);
+
+    await request(app.getHttpServer())
+      .get('/doctors/me/appointments?from=not-a-date')
+      .set('Authorization', `Bearer ${doctor.token}`)
+      .expect(400);
+
     await request(app.getHttpServer())
       .get('/doctors/me/appointments')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(403);
 
-    await db.delete(appointments).where(eq(appointments.id, booked.body.id));
+    await db.delete(appointments).where(eq(appointments.patientId, patient.user.id));
   });
 });
