@@ -108,7 +108,7 @@ describe('Appointments (e2e)', () => {
     expect(mine.body.map((a: { id: number }) => a.id)).toContain(book.body.id);
   });
 
-  it('hides completed appointments by default and includes them with status=completed', async () => {
+  it('returns all statuses by default and filters with status=...', async () => {
     const { doctor, patient, start } = await makeDoctorAndSlot();
 
     const completed = await request(app.getHttpServer())
@@ -122,17 +122,26 @@ describe('Appointments (e2e)', () => {
       .set({ status: 'completed' })
       .where(eq(appointments.id, completed.body.id));
 
-    const defaultMine = await request(app.getHttpServer())
+    // No filter: every status is returned, including completed.
+    const allMine = await request(app.getHttpServer())
       .get('/appointments/me')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
-    expect(defaultMine.body.map((a: { id: number }) => a.id)).not.toContain(completed.body.id);
+    expect(allMine.body.map((a: { id: number }) => a.id)).toContain(completed.body.id);
 
+    // status=completed retrieves only completed appointments.
     const historyMine = await request(app.getHttpServer())
       .get('/appointments/me?status=completed')
       .set('Authorization', `Bearer ${patient.token}`)
       .expect(200);
     expect(historyMine.body.map((a: { id: number }) => a.id)).toContain(completed.body.id);
+
+    // status=scheduled excludes it.
+    const scheduledMine = await request(app.getHttpServer())
+      .get('/appointments/me?status=scheduled')
+      .set('Authorization', `Bearer ${patient.token}`)
+      .expect(200);
+    expect(scheduledMine.body.map((a: { id: number }) => a.id)).not.toContain(completed.body.id);
   });
 
   it('rejects a second booking for the same slot with 409', async () => {

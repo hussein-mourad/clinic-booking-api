@@ -25,7 +25,7 @@ export class AppointmentsController {
   }
 
   @Get('me')
-  @ApiOperation({ summary: "List the current patient's appointments, optionally filtered by status (defaults to scheduled)" })
+  @ApiOperation({ summary: "List the current patient's appointments, optionally filtered by status" })
   @ApiResponse({ status: 200, description: 'Array of appointments' })
   mine(@CurrentUser() user: JwtPayload, @Query() query: MineQuery) {
     return this.appointments.mine(user.sub, query.status);
