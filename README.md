@@ -28,6 +28,7 @@ Production
 # It runs two instance of the api load balanced with nginx
 # Note: you need to migrate manually and set .env credentials
 bun run prod:up
+bun run db:migrate # apply latest migrations
 # API: http://localhost:8080 Swagger: http://localhost:8080/api
 ```
 
