@@ -9,13 +9,7 @@ with DB-level concurrency safety, BullMQ background jobs, and SQL-aggregated ana
 
 ## Quick start
 
-```bash
-# one command boots everything (Postgres + Redis + API) with migrations on startup
-bun run prod
-# API:  http://localhost:3001   Swagger: http://localhost:3001/api
-```
-
-Fast local development without the containerized API:
+Local Development
 
 ```bash
 bun install
@@ -23,11 +17,18 @@ cp .env.example .env     # defaults match the compose services
 bun run dev:infra        # Postgres + Redis only (Docker)
 bun run dev              # bun watch server on :3000
 bun run db:migrate       # apply latest SQL migration alphabetically
+bun run db:seed          # To Seed the database
 # API:  http://localhost:3000   Swagger: http://localhost:3000/api
 ```
 
-Then `bun run seed` to create a demo doctor (Sun–Thu 10:00–16:00, 30-min slots) and
-3 patients, printing working tokens for immediate API use.
+Production
+
+```bash
+# one command boots everything (Postgres + Redis + API)
+# Note: you need to migrate manually and set .env credentials
+bun run prod:up
+# API: http://localhost:3001 Swagger: http://localhost:3001/api
+```
 
 ---
 
@@ -46,32 +47,34 @@ Then `bun run seed` to create a demo doctor (Sun–Thu 10:00–16:00, 30-min slo
 ## API surface
 
 ```
-POST   /auth/register                          any
-POST   /auth/login                             any
 
-GET    /doctors                                any authenticated
-GET    /doctors/:id/slots?from&to              patient, doctor      (availability, on-the-fly)
-GET    /doctors/:id/schedule                   patient, doctor      (view any doctor's schedule)
-GET    /doctors/me                             doctor               (profile + slot duration)
-GET    /doctors/me/schedule                    doctor
-PUT    /doctors/me/schedule                    doctor
-GET    /doctors/me/appointments?from&to        doctor               (own booked appointments + patient name)
-GET    /doctors/me/analytics?month=YYYY-MM     doctor               (pure-SQL aggregates, own data only)
-POST   /doctors/me/blocks                      doctor
-GET    /doctors/me/blocks                      doctor
-GET    /doctors/me/blocks/:blockId             doctor
-PATCH  /doctors/me/blocks/:blockId             doctor
-DELETE /doctors/me/blocks/:blockId             doctor
-PATCH  /doctors/me                             doctor               (slot duration 15/30/60)
+POST /auth/register any
+POST /auth/login any
 
-POST   /appointments       { doctorId, startTime }                patient
-GET    /appointments/me?status=...                                 patient   (status filter; defaults to scheduled)
-DELETE /appointments/:id                                            patient   (2h cancel window)
+GET /doctors any authenticated
+GET /doctors/:id/slots?from&to patient, doctor (availability, on-the-fly)
+GET /doctors/:id/schedule patient, doctor (view any doctor's schedule)
+GET /doctors/me doctor (profile + slot duration)
+GET /doctors/me/schedule doctor
+PUT /doctors/me/schedule doctor
+GET /doctors/me/appointments?from&to doctor (own booked appointments + patient name)
+GET /doctors/me/analytics?month=YYYY-MM doctor (pure-SQL aggregates, own data only)
+POST /doctors/me/blocks doctor
+GET /doctors/me/blocks doctor
+GET /doctors/me/blocks/:blockId doctor
+PATCH /doctors/me/blocks/:blockId doctor
+DELETE /doctors/me/blocks/:blockId doctor
+PATCH /doctors/me doctor (slot duration 15/30/60)
 
-POST   /waitlist           { doctorId, startTime }                patient
-GET    /waitlist/me                                                 patient   (my entries + status)
-POST   /waitlist/:id/accept                                         patient
-DELETE /waitlist/:id                                                patient
+POST /appointments { doctorId, startTime } patient
+GET /appointments/me?status=... patient (status filter; defaults to scheduled)
+DELETE /appointments/:id patient (2h cancel window)
+
+POST /waitlist { doctorId, startTime } patient
+GET /waitlist/me patient (my entries + status)
+POST /waitlist/:id/accept patient
+DELETE /waitlist/:id patient
+
 ```
 
 ---
@@ -88,6 +91,8 @@ the database level:
    ON appointments (doctor_id, start_time)
    WHERE status = 'scheduled';
    ```
+
+````
 
 2. **Conditional insert** — every booking (direct or waitlist-accept) uses
    `INSERT ... ON CONFLICT DO NOTHING RETURNING *`. No returned row ⇒ the slot was already
@@ -249,3 +254,4 @@ bun run prod:up && bun run proof:lb  # two replicas behind nginx: traffic spread
 ## AI usage
 
 I used OpenCode throughout my development workflow, from planning and implementation to code review, testing, and documentation. I used it to break down tasks, explore different solutions, write and improve code, find bugs, and create tests and documentation. It helped me work faster while still keeping me involved in the decisions and making sure I understood the code I am using.
+````

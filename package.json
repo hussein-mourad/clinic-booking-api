@@ -22,8 +22,7 @@
     "db:generate": "drizzle-kit generate",
     "db:studio": "drizzle-kit studio",
     "db:migrate": "tsx src/db/migrate.ts",
-    "seed": "tsx scripts/seed.ts",
-    "seed:full": "tsx scripts/seed-full.ts",
+    "db:seed": "tsx scripts/seed-full.ts",
     "prod:up": "docker compose -f docker-compose.prod.yml up -d --build",
     "prod:down": "docker compose -f docker-compose.prod.yml down",
     "prod:logs": "docker compose -f docker-compose.prod.yml logs -f"
