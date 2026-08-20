@@ -40,7 +40,7 @@ services:
       POSTGRES_PASSWORD: clinic
       POSTGRES_DB: clinic
     ports:
-      - "${PROD_DB_PORT:-5433}:5432"
+      - "${PROD_DB_PORT:-5432}:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     healthcheck:
@@ -52,23 +52,12 @@ services:
   redis:
     image: redis:7-alpine
     ports:
-      - "${PROD_REDIS_PORT:-6380}:6379"
+      - "${PROD_REDIS_PORT:-6379}:6379"
     healthcheck:
       test: ["CMD", "redis-cli", "ping"]
       interval: 5s
       timeout: 5s
       retries: 10
-
-  redis-insight:
-    image: redislabs/redisinsight:2.66
-    container_name: redis-insight-prod
-    ports:
-      - "${PROD_INSIGHT_PORT:-8002}:5540"
-    environment:
-      REDIS_PORT: 6379
-      REDIS_HOST: redis
-    depends_on:
-      - redis
 
   # migrate:
   #   image: clinic-booking-api:prod
@@ -88,12 +77,22 @@ services:
     environment:
       <<: *api-env
       INSTANCE_ID: api-1
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   api-2:
     <<: *api
     environment:
       <<: *api-env
       INSTANCE_ID: api-2
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
 
   lb:
     image: nginx:1.27-alpine

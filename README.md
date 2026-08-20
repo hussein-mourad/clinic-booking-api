@@ -25,9 +25,10 @@ Production
 
 ```bash
 # one command boots everything (Postgres + Redis + API)
+# It runs two instance of the api load balanced with nginx
 # Note: you need to migrate manually and set .env credentials
 bun run prod:up
-# API: http://localhost:3001 Swagger: http://localhost:3001/api
+# API: http://localhost:8080 Swagger: http://localhost:8080/api
 ```
 
 ---
